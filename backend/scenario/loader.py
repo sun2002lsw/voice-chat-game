@@ -3,7 +3,6 @@ from typing import Any
 
 import yaml
 
-from .common import StepPaths, StepTransition
 from .scenario import Scenario
 from .step import Step
 
@@ -57,29 +56,38 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
     _validate_step_files(step_name, step_dir)
 
     picture_path = find_image(step_dir, label=f"step '{step_name}'")
-    paths = StepPaths(step_dir=step_dir, picture=picture_path)
-    transitions = _build_transitions(entry)
+    complete_conditions, next_step_names = _build_transition_lists(entry)
 
     return Step(
         name=step_name,
         scene=entry["scene"],
         character=entry["character"],
-        paths=paths,
-        transitions=transitions,
+        step_dir=step_dir,
+        picture=picture_path,
+        complete_conditions=complete_conditions,
+        next_step_names=next_step_names,
     )
 
 
-def _build_transitions(entry: dict[str, Any]) -> list[StepTransition]:
+def _build_transition_lists(
+    entry: dict[str, Any],
+) -> tuple[list[str], list[str]]:
     conditions = entry["complete_conditions"]
     next_steps = entry["next_steps"]
 
     if not conditions:
-        return [
-            StepTransition(condition="", next_step_name=name) for name in next_steps
-        ]
+        empty_conditions = ["" for _ in next_steps]
+        return empty_conditions, list(next_steps)
 
-    pairs = zip(conditions, next_steps, strict=True)
-    return [StepTransition(condition=c, next_step_name=n) for c, n in pairs]
+    if len(conditions) != len(next_steps):
+        msg = (
+            f"step '{entry['step']}'의 complete_conditions 와 next_steps "
+            f"길이가 다릅니다. "
+            f"conditions={len(conditions)}, next_steps={len(next_steps)}"
+        )
+        raise ValueError(msg)
+
+    return list(conditions), list(next_steps)
 
 
 def _validate_step_entry(entry: dict[str, Any]) -> None:

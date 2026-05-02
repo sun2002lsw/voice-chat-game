@@ -10,18 +10,6 @@ class StepOutput:
 
 
 @dataclass(frozen=True)
-class StepTransition:
-    condition: str
-    next_step_name: str
-
-
-@dataclass(frozen=True)
-class StepPaths:
-    step_dir: Path
-    picture: Path
-
-
-@dataclass(frozen=True)
 class ScenarioInfo:
     name: str
     picture: Path

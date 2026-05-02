@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 import yaml
 
-from scenario.common import ScenarioInfo, StepTransition
+from scenario.common import ScenarioInfo
 from scenario.manager import ScenarioManager
 from scenario.scenario import Scenario
 from scenario.step import Step
@@ -261,9 +261,8 @@ def test_get_constructs_first_step_from_yaml(scenarios_root, monkeypatch):
     assert first_step.name == "1. 인사"
     assert first_step.scene == "직원이 인사한다"
     assert first_step.character == "Zephyr"
-    assert first_step.transitions == [
-        StepTransition(condition="주문", next_step_name="2. 결제")
-    ]
+    assert first_step.complete_conditions == ["주문"]
+    assert first_step.next_step_names == ["2. 결제"]
 
 
 def test_get_uses_steps_subdir_for_step_dir(scenarios_root, monkeypatch):

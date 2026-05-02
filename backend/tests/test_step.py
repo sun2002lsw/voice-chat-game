@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-from scenario.common import StepPaths, StepTransition
 from scenario.loader import find_image
 from scenario.step import Step
 
@@ -59,8 +58,10 @@ def test_get_output_returns_paths_for_first_visit(step_dir):
         name="1. greeting",
         scene="인사하는 상황",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[],
+        next_step_names=[],
     )
 
     output = step.get_output()
@@ -77,8 +78,10 @@ def test_get_output_reflects_visit_count_after_invoke(step_dir, monkeypatch):
         name="self-loop",
         scene="...",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[],
+        next_step_names=[],
     )
 
     step.invoke("입력")
@@ -100,7 +103,7 @@ def test_get_output_reflects_visit_count_after_invoke(step_dir, monkeypatch):
         (1, "1. 어서오세요-안내"),
     ],
 )
-def test_invoke_returns_next_step_name_at_llm_index(
+def test_invoke_returns_step_name_and_llm_index_tuple(
     step_dir,
     monkeypatch,
     llm_index,
@@ -113,16 +116,15 @@ def test_invoke_returns_next_step_name_at_llm_index(
         name="1. 어서오세요",
         scene="카페 직원으로서 인사한다",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[
-            StepTransition(condition="메뉴 주문", next_step_name="2. 결제"),
-            StepTransition(condition="메뉴 질문", next_step_name="1. 어서오세요-안내"),
-        ],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["메뉴 주문", "메뉴 질문"],
+        next_step_names=["2. 결제", "1. 어서오세요-안내"],
     )
 
     result = step.invoke("아메리카노 주세요")
 
-    assert result == expected_next_step
+    assert result == (expected_next_step, llm_index)
 
 
 def test_invoke_passes_scene_conditions_and_user_input_to_llm(step_dir, monkeypatch):
@@ -132,11 +134,10 @@ def test_invoke_passes_scene_conditions_and_user_input_to_llm(step_dir, monkeypa
         name="1. 어서오세요",
         scene="카페 직원으로서 인사한다",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[
-            StepTransition(condition="메뉴 주문", next_step_name="2. 결제"),
-            StepTransition(condition="메뉴 질문", next_step_name="1. 어서오세요-안내"),
-        ],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["메뉴 주문", "메뉴 질문"],
+        next_step_names=["2. 결제", "1. 어서오세요-안내"],
     )
 
     step.invoke("아메리카노 주세요")
@@ -155,13 +156,15 @@ def test_invoke_skips_llm_when_complete_conditions_empty(step_dir, monkeypatch):
         name="1. 어서오세요-안내",
         scene="안내한다",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[StepTransition(condition="", next_step_name="1. 어서오세요")],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[""],
+        next_step_names=["1. 어서오세요"],
     )
 
     result = step.invoke("아무 입력")
 
-    assert result == "1. 어서오세요"
+    assert result == ("1. 어서오세요", None)
 
 
 def test_invoke_returns_self_name_when_no_conditions_and_no_next_steps(
@@ -174,13 +177,15 @@ def test_invoke_returns_self_name_when_no_conditions_and_no_next_steps(
         name="2. 결제",
         scene="결제 요청",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[],
+        next_step_names=[],
     )
 
     result = step.invoke("아무 입력")
 
-    assert result == "2. 결제"
+    assert result == ("2. 결제", None)
 
 
 def test_invoke_increments_visit_count_on_each_call(step_dir, monkeypatch):
@@ -190,8 +195,10 @@ def test_invoke_increments_visit_count_on_each_call(step_dir, monkeypatch):
         name="1. 어서오세요",
         scene="...",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[StepTransition(condition="메뉴 주문", next_step_name="2. 결제")],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["메뉴 주문"],
+        next_step_names=["2. 결제"],
     )
 
     assert step.visit_count == 1
@@ -208,13 +215,85 @@ def test_invoke_increments_visit_count_even_when_no_conditions(step_dir, monkeyp
         name="self-loop",
         scene="...",
         character="Zephyr_smile",
-        paths=StepPaths(step_dir=step_dir, picture=step_dir / "picture.png"),
-        transitions=[],
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[],
+        next_step_names=[],
     )
 
     step.invoke("입력")
 
     assert step.visit_count == 2
+
+
+def test_is_terminal_true_when_no_next_step_names(step_dir):
+    step = Step(
+        name="end",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[],
+        next_step_names=[],
+    )
+
+    assert step.is_terminal is True
+
+
+def test_is_terminal_false_when_has_next_step_names(step_dir):
+    step = Step(
+        name="step",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[""],
+        next_step_names=["next"],
+    )
+
+    assert step.is_terminal is False
+
+
+def test_conditions_extracts_non_empty_conditions(step_dir):
+    step = Step(
+        name="step",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["메뉴 주문", "메뉴 질문"],
+        next_step_names=["2. 결제", "1. 안내"],
+    )
+
+    assert step.conditions == ["메뉴 주문", "메뉴 질문"]
+
+
+def test_conditions_excludes_empty_string_conditions(step_dir):
+    step = Step(
+        name="step",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[""],
+        next_step_names=["next"],
+    )
+
+    assert step.conditions == []
+
+
+def test_next_step_names_lists_all_targets(step_dir):
+    step = Step(
+        name="step",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["메뉴 주문", ""],
+        next_step_names=["2. 결제", "1. 안내"],
+    )
+
+    assert step.next_step_names == ["2. 결제", "1. 안내"]
 
 
 @pytest.mark.parametrize(

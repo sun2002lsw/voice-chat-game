@@ -8,12 +8,15 @@ dependencies = [
     "pyyaml>=6.0",
     "langchain-google-genai>=2.0",
     "langchain-core>=0.3",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
 ]
 
 [dependency-groups]
 dev = [
     "ruff>=0.6.0",
     "pytest>=8.0",
+    "httpx>=0.28",
 ]
 tts = [
     "google-genai>=0.4",
@@ -35,6 +38,12 @@ ignore = [
     "CPY",     # 저작권 헤더 강제 안 함
     "COM812",  # formatter와 충돌하는 trailing comma
     "ISC001",  # formatter와 충돌하는 implicit string concat
+    "PLR0913", # too-many-arguments
+    "PLR0917", # too-many-positional-arguments
+    "TC001",   # type-checking 블록 강제 안 함 (가독성 우선)
+    "TC002",
+    "TC003",
+    "PERF401", # list comprehension 강제 안 함 (풀어 쓰는 게 우리 컨벤션)
 ]
 
 [tool.ruff.lint.per-file-ignores]
