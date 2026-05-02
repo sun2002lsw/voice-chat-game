@@ -1,0 +1,23 @@
+from dataclasses import dataclass
+from pathlib import Path
+
+from datastore.model import DialogEntry, StateLogEntry
+
+
+@dataclass(frozen=True)
+class ScenarioSummary:
+    name: str
+    picture_path: Path
+    has_progress: bool
+
+
+@dataclass(frozen=True)
+class SessionState:
+    scenario_name: str
+    current_step_name: str
+    is_terminal: bool
+    picture_path: Path
+    voice_path: Path
+    profile_path: Path
+    dialog: list[DialogEntry]
+    state_log: list[StateLogEntry]
