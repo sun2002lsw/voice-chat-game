@@ -278,3 +278,42 @@ def test_get_state_returns_current_state_after_start_new(
 
     assert state is not None
     assert state.current_step_name == "1. 인사"
+
+
+def test_start_new_marks_is_terminal_false_for_non_terminal_step(
+    game_session: GameSession,
+):
+    state = game_session.start_new("test_cafe")
+    assert state.is_terminal is False
+
+
+def test_submit_input_marks_is_terminal_true_at_terminal_step(
+    game_session: GameSession,
+):
+    _FakeLLM.next_index = 0
+    game_session.start_new("test_cafe")
+
+    state = game_session.submit_input("test_cafe", "주문할게요")
+
+    assert state.current_step_name == "2. 결제"
+    assert state.is_terminal is True
+
+
+def test_resume_preserves_is_terminal(
+    tmp_path: Path,
+    game_session: GameSession,
+):
+    _FakeLLM.next_index = 0
+    game_session.start_new("test_cafe")
+    game_session.submit_input("test_cafe", "주문할게요")
+
+    Singleton._instances.pop(ScenarioManager, None)
+    fresh_manager = ScenarioManager()
+    fresh_datastore = Sqlite(db_path=tmp_path / "game.db")
+    fresh_session = GameSession(
+        datastore=fresh_datastore, scenario_manager=fresh_manager,
+    )
+
+    state = fresh_session.resume("test_cafe")
+    assert state is not None
+    assert state.is_terminal is True
