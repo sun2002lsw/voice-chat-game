@@ -1,0 +1,308 @@
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+from fastapi.testclient import TestClient
+
+from api.app import build_app
+from scenario.manager import ScenarioManager
+from singleton import Singleton
+
+
+def _write_graph(scenario_dir: Path, graph: dict[str, Any]) -> None:
+    graph_yaml_text = yaml.safe_dump(graph, allow_unicode=True)
+    (scenario_dir / "graph.yaml").write_text(graph_yaml_text, encoding="utf-8")
+
+
+def _make_step_dir(
+    scenario_dir: Path,
+    step_name: str,
+    *,
+    script_text: str = "기본 대사",
+) -> None:
+    step_dir = scenario_dir / "steps" / step_name
+    step_dir.mkdir(parents=True)
+    (step_dir / "picture.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    (step_dir / "script").mkdir()
+    (step_dir / "script" / "1.txt").write_text(script_text, encoding="utf-8")
+    (step_dir / "voice").mkdir()
+    (step_dir / "voice" / "1.wav").write_bytes(b"RIFF....WAVEfmt ")
+
+
+class _FakeLLM:
+    next_index: int = 0
+
+    def __init__(self) -> None:
+        pass
+
+    def get_next_step(
+        self,
+        scene: str,
+        complete_conditions: list[str],
+        user_input: str,
+    ) -> int:
+        return _FakeLLM.next_index
+
+
+@pytest.fixture
+def scenarios_root(tmp_path: Path) -> Path:
+    root = tmp_path / "scenarios"
+    root.mkdir()
+
+    cafe_dir = root / "test_cafe"
+    cafe_dir.mkdir()
+    (cafe_dir / "picture.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    cafe_graph = {
+        "scenario": "test_cafe",
+        "steps": [
+            {
+                "step": "1. 인사",
+                "scene": "직원이 인사한다",
+                "character": "Zephyr",
+                "complete_conditions": ["주문"],
+                "next_steps": ["2. 결제"],
+            },
+            {
+                "step": "2. 결제",
+                "scene": "결제한다",
+                "character": "Zephyr",
+                "complete_conditions": [],
+                "next_steps": [],
+            },
+        ],
+    }
+    _write_graph(cafe_dir, cafe_graph)
+    _make_step_dir(cafe_dir, "1. 인사", script_text="어서오세요")
+    _make_step_dir(cafe_dir, "2. 결제", script_text="결제 도와드릴게요")
+
+    return root
+
+
+@pytest.fixture(autouse=True)
+def reset_singletons_and_llm(monkeypatch):
+    Singleton._instances.pop(ScenarioManager, None)
+    _FakeLLM.next_index = 0
+    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
+    yield
+    Singleton._instances.pop(ScenarioManager, None)
+
+
+@pytest.fixture
+def client(
+    tmp_path: Path,
+    scenarios_root: Path,
+    monkeypatch,
+) -> TestClient:
+    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
+    app = build_app(db_path=tmp_path / "game.db")
+    return TestClient(app)
+
+
+def test_list_scenarios_returns_summary(client: TestClient):
+    response = client.get("/api/scenarios")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    summary = body[0]
+    assert summary["name"] == "test_cafe"
+    assert summary["has_progress"] is False
+    assert summary["profile_url"].endswith("/api/scenarios/test_cafe/profile")
+
+
+def test_list_scenarios_marks_has_progress_after_new(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.get("/api/scenarios")
+
+    assert response.json()[0]["has_progress"] is True
+
+
+def test_get_scenario_profile_returns_image(client: TestClient):
+    response = client.get("/api/scenarios/test_cafe/profile")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/")
+    assert len(response.content) > 0
+
+
+def test_get_scenario_profile_returns_404_for_unknown_scenario(client: TestClient):
+    response = client.get("/api/scenarios/unknown_scenario/profile")
+    assert response.status_code == 404
+
+
+def test_post_new_returns_initial_state(client: TestClient):
+    response = client.post("/api/scenarios/test_cafe/new")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["scenario_name"] == "test_cafe"
+    assert body["current_step_name"] == "1. 인사"
+    assert body["is_terminal"] is False
+    assert body["picture_url"] == "/api/scenarios/test_cafe/picture"
+    assert body["voice_url"] == "/api/scenarios/test_cafe/voice"
+
+    assert len(body["dialog"]) == 1
+    assert body["dialog"][0]["role"] == "character"
+    assert body["dialog"][0]["text"] == "어서오세요"
+
+    assert len(body["state_log"]) == 1
+    first_entry = body["state_log"][0]
+    assert first_entry["step_name"] == "1. 인사"
+    assert first_entry["visit_count"] == 1
+    assert first_entry["conditions"] == ["주문"]
+    assert first_entry["next_step_names"] == ["2. 결제"]
+    assert first_entry["character_script"] == "어서오세요"
+    assert first_entry["user_input"] == ""
+    assert first_entry["llm_index"] is None
+
+
+def test_post_continue_returns_404_when_no_progress(client: TestClient):
+    response = client.post("/api/scenarios/test_cafe/continue")
+    assert response.status_code == 404
+
+
+def test_post_continue_returns_state_when_progress_exists(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.post("/api/scenarios/test_cafe/continue")
+
+    assert response.status_code == 200
+    assert response.json()["current_step_name"] == "1. 인사"
+
+
+def test_get_state_returns_404_when_no_progress(client: TestClient):
+    response = client.get("/api/scenarios/test_cafe/state")
+    assert response.status_code == 404
+
+
+def test_get_state_returns_current_session_state(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.get("/api/scenarios/test_cafe/state")
+
+    assert response.status_code == 200
+    assert response.json()["current_step_name"] == "1. 인사"
+
+
+def test_post_input_advances_to_next_step_and_appends_logs(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.post(
+        "/api/scenarios/test_cafe/input",
+        json={"text": "주문할게요"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["current_step_name"] == "2. 결제"
+    assert len(body["dialog"]) == 3
+    assert len(body["state_log"]) == 2
+
+    completed = body["state_log"][0]
+    assert completed["step_name"] == "1. 인사"
+    assert completed["user_input"] == "주문할게요"
+    assert completed["llm_index"] == 0
+
+    started = body["state_log"][1]
+    assert started["step_name"] == "2. 결제"
+    assert started["user_input"] == ""
+    assert started["llm_index"] is None
+    assert started["character_script"] == "결제 도와드릴게요"
+
+
+def test_post_input_returns_404_when_no_progress(client: TestClient):
+    response = client.post(
+        "/api/scenarios/test_cafe/input",
+        json={"text": "hi"},
+    )
+    assert response.status_code == 404
+
+
+def test_get_picture_returns_image(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.get("/api/scenarios/test_cafe/picture")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/")
+    assert len(response.content) > 0
+
+
+def test_get_voice_returns_audio_bytes(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.get("/api/scenarios/test_cafe/voice")
+
+    assert response.status_code == 200
+    assert len(response.content) > 0
+
+
+def test_get_picture_returns_404_when_no_progress(client: TestClient):
+    response = client.get("/api/scenarios/test_cafe/picture")
+    assert response.status_code == 404
+
+
+def test_get_voice_returns_404_when_no_progress(client: TestClient):
+    response = client.get("/api/scenarios/test_cafe/voice")
+    assert response.status_code == 404
+
+
+def test_post_input_marks_is_terminal_true_at_terminal_step(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.post(
+        "/api/scenarios/test_cafe/input",
+        json={"text": "주문할게요"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["current_step_name"] == "2. 결제"
+    assert body["is_terminal"] is True
+
+
+def test_state_persists_across_app_rebuild(
+    tmp_path: Path,
+    scenarios_root: Path,
+    monkeypatch,
+):
+    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
+    db_path = tmp_path / "game.db"
+
+    Singleton._instances.pop(ScenarioManager, None)
+    first_app = build_app(db_path=db_path)
+    first_client = TestClient(first_app)
+    first_client.post("/api/scenarios/test_cafe/new")
+    first_client.post(
+        "/api/scenarios/test_cafe/input",
+        json={"text": "주문할게요"},
+    )
+
+    Singleton._instances.pop(ScenarioManager, None)
+    second_app = build_app(db_path=db_path)
+    second_client = TestClient(second_app)
+
+    response = second_client.get("/api/scenarios/test_cafe/state")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["current_step_name"] == "2. 결제"
+    assert len(body["dialog"]) == 3
+    assert len(body["state_log"]) == 2
+
+
+def test_cors_preflight_allows_localhost_5173(client: TestClient):
+    response = client.options(
+        "/api/scenarios",
+        headers={
+            "origin": "http://localhost:5173",
+            "access-control-request-method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert (
+        response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    )
