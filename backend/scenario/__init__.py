@@ -1,4 +1,5 @@
 from .common import StepOutput
+from .scenario import Scenario
 from .step import Step
 
-__all__ = ["Step", "StepOutput"]
+__all__ = ["Scenario", "Step", "StepOutput"]
