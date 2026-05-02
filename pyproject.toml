@@ -1,0 +1,69 @@
+[project]
+name = "voice-chat-game"
+version = "0.1.0"
+description = "기존의 선택지 분기 게임에 STT와 LLM 선택을 적용한 게임"
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "langchain-google-genai>=2.0",
+    "langchain-core>=0.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6.0",
+    "pytest>=8.0",
+]
+tts = [
+    "google-genai>=0.4",
+]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "backend"]
+testpaths = ["backend/tests", "tts/tests"]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = [".venv"]
+src = ["backend"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",       # pydocstyle (docstrings 강제 안 함)
+    "CPY",     # 저작권 헤더 강제 안 함
+    "COM812",  # formatter와 충돌하는 trailing comma
+    "ISC001",  # formatter와 충돌하는 implicit string concat
+]
+
+[tool.ruff.lint.per-file-ignores]
+# backend top-level은 src root라 패키지 아님
+"backend/*.py" = ["INP001"]
+"backend/main.py" = [
+    "T201",   # main 진입점 print 허용
+]
+"backend/singleton.py" = [
+    "ANN002",  # *args 어노테이션 면제 (메타클래스 __call__)
+    "ANN003",  # **kwargs 어노테이션 면제
+    "ANN204",  # __call__ 반환 타입 면제 (메타클래스 동적 디스패치)
+]
+"backend/tests/**/*.py" = [
+    "S101",     # pytest assert
+    "PLR2004",  # 테스트 magic number 허용
+    "ANN",      # 테스트 타입 어노테이션 강제 안 함
+    "INP001",   # 테스트도 namespace 허용
+    "SLF001",   # 싱글턴 리셋 등 private 접근 허용
+    "ARG002",   # mock 호환용 미사용 args 허용
+]
+"tts/*.py" = [
+    "T201",     # CLI 출력 print 허용
+]
+"tts/tests/**/*.py" = [
+    "S101",     # pytest assert
+    "PLR2004",  # 테스트 magic number 허용
+    "ANN",      # 테스트 타입 어노테이션 강제 안 함
+    "INP001",   # 테스트도 namespace 허용
+    "ARG001",   # fake_xxx 함수의 미사용 시그니처 인자 허용
+    "ARG002",   # mock 호환용 미사용 args 허용
+]
