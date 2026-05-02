@@ -49,9 +49,6 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # backend top-level은 src root라 패키지 아님
 "backend/*.py" = ["INP001"]
-"backend/main.py" = [
-    "T201",   # main 진입점 print 허용
-]
 "backend/singleton.py" = [
     "ANN002",  # *args 어노테이션 면제 (메타클래스 __call__)
     "ANN003",  # **kwargs 어노테이션 면제

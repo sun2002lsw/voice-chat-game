@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(git commit:*)",
+      "Bash(git commit *)",
+      "Bash(git commit)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$payload = [Console]::In.ReadToEnd() | ConvertFrom-Json; if ($payload.tool_input.command -match 'git commit') { Write-Output '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"git commit requires explicit user confirmation\"}}' }"
+          }
+        ]
+      }
+    ]
+  }
+}
