@@ -160,4 +160,41 @@ describe("Lobby", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("시나리오 목록을 불러오지 못했습니다.");
   });
+
+  it("shows an alert when startNew fails (card click without progress)", async () => {
+    mockScenarios();
+    server.use(
+      http.post("/api/scenarios/:name/new", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderLobby();
+    await user.click(
+      await screen.findByRole("button", { name: /no_progress_cafe/ }),
+    );
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("새 게임을 시작하지 못했습니다.");
+  });
+
+  it("shows an alert when resumeSession fails (modal 이어하기)", async () => {
+    mockScenarios();
+    server.use(
+      http.post("/api/scenarios/:name/continue", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderLobby();
+    await user.click(
+      await screen.findByRole("button", { name: /with_progress_interview/ }),
+    );
+    await user.click(screen.getByRole("button", { name: "이어하기" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("이어하기에 실패했습니다.");
+  });
 });
