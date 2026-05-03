@@ -31,11 +31,7 @@ class Step:
 
     @property
     def conditions(self) -> list[str]:
-        non_empty: list[str] = []
-        for c in self.complete_conditions:
-            if c:
-                non_empty.append(c)
-        return non_empty
+        return [c for c in self.complete_conditions if c]
 
     def invoke(self, user_input: str) -> tuple[str, int | None]:
         next_step_name, llm_index = self._decide_next_step(user_input)
@@ -51,7 +47,7 @@ class Step:
         )
 
     def _decide_next_step(self, user_input: str) -> tuple[str, int | None]:
-        has_conditions = any(c for c in self.complete_conditions)
+        has_conditions = any(self.complete_conditions)
         if not has_conditions:
             return self._next_step_without_conditions(), None
 

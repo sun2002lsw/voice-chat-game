@@ -45,18 +45,16 @@ class InputRequest(BaseModel):
 def to_session_state_dto(state: SessionState) -> SessionStateDTO:
     name = state.scenario_name
 
-    dialog_dtos: list[DialogEntryDTO] = []
-    for entry in state.dialog:
-        dialog_dto = DialogEntryDTO(
+    dialog_dtos = [
+        DialogEntryDTO(
             role=entry.role,
             text=entry.text,
             created_at=entry.created_at,
         )
-        dialog_dtos.append(dialog_dto)
-
-    state_log_dtos: list[StateLogEntryDTO] = []
-    for entry in state.state_log:
-        state_dto = StateLogEntryDTO(
+        for entry in state.dialog
+    ]
+    state_log_dtos = [
+        StateLogEntryDTO(
             step_name=entry.step_name,
             visit_count=entry.visit_count,
             conditions=entry.conditions,
@@ -65,7 +63,8 @@ def to_session_state_dto(state: SessionState) -> SessionStateDTO:
             user_input=entry.user_input,
             llm_index=entry.llm_index,
         )
-        state_log_dtos.append(state_dto)
+        for entry in state.state_log
+    ]
 
     return SessionStateDTO(
         scenario_name=state.scenario_name,

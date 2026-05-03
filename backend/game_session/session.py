@@ -5,6 +5,7 @@ from datastore.sqlite import Sqlite
 from game_session.model import ScenarioSummary, SessionState
 from scenario.manager import ScenarioManager
 from scenario.scenario import Scenario
+from scenario.step import Step
 
 
 class GameSession:
@@ -18,17 +19,14 @@ class GameSession:
 
     def list_scenarios(self) -> list[ScenarioSummary]:
         progressed = set(self._datastore.list_progressed_scenarios())
-
-        summaries: list[ScenarioSummary] = []
-        for info in self._manager.list_all():
-            summary = ScenarioSummary(
+        return [
+            ScenarioSummary(
                 name=info.name,
                 picture_path=info.picture,
                 has_progress=info.name in progressed,
             )
-            summaries.append(summary)
-
-        return summaries
+            for info in self._manager.list_all()
+        ]
 
     def start_new(self, scenario_name: str) -> SessionState:
         self._datastore.clear(scenario_name)
@@ -45,15 +43,7 @@ class GameSession:
             text=character_script,
             created_at=now,
         )
-        first_state_entry = StateLogEntry(
-            step_name=first_step.name,
-            visit_count=first_step.visit_count,
-            conditions=first_step.conditions,
-            next_step_names=first_step.next_step_names,
-            character_script=character_script,
-            user_input="",
-            llm_index=None,
-        )
+        first_state_entry = _state_entry_from_step(first_step, character_script)
 
         self._datastore.append_dialog(scenario_name, first_dialog)
         self._datastore.append_state_log(scenario_name, first_state_entry)
@@ -96,15 +86,7 @@ class GameSession:
         else:
             new_character_dialog = None
 
-        new_state_entry = StateLogEntry(
-            step_name=new_step.name,
-            visit_count=new_step.visit_count,
-            conditions=new_step.conditions,
-            next_step_names=new_step.next_step_names,
-            character_script=new_character_script,
-            user_input="",
-            llm_index=None,
-        )
+        new_state_entry = _state_entry_from_step(new_step, new_character_script)
 
         self._datastore.commit_turn(
             scenario_name=scenario_name,
@@ -134,3 +116,15 @@ class GameSession:
             dialog=self._datastore.load_dialog(scenario_name),
             state_log=self._datastore.load_state_log(scenario_name),
         )
+
+
+def _state_entry_from_step(step: Step, character_script: str) -> StateLogEntry:
+    return StateLogEntry(
+        step_name=step.name,
+        visit_count=step.visit_count,
+        conditions=step.conditions,
+        next_step_names=step.next_step_names,
+        character_script=character_script,
+        user_input="",
+        llm_index=None,
+    )

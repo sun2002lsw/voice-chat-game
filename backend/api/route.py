@@ -7,6 +7,7 @@ from api.model import (
     SessionStateDTO,
     to_session_state_dto,
 )
+from game_session.model import SessionState
 from game_session.session import GameSession
 
 router = APIRouter()
@@ -15,18 +16,14 @@ router = APIRouter()
 @router.get("/scenarios")
 def list_scenarios(request: Request) -> list[ScenarioSummaryDTO]:
     session = _get_session(request)
-    summaries = session.list_scenarios()
-
-    dtos: list[ScenarioSummaryDTO] = []
-    for summary in summaries:
-        dto = ScenarioSummaryDTO(
-            name=summary.name,
-            profile_url=f"/api/scenarios/{summary.name}/profile",
-            has_progress=summary.has_progress,
+    return [
+        ScenarioSummaryDTO(
+            name=s.name,
+            profile_url=f"/api/scenarios/{s.name}/profile",
+            has_progress=s.has_progress,
         )
-        dtos.append(dto)
-
-    return dtos
+        for s in session.list_scenarios()
+    ]
 
 
 @router.get("/scenarios/{name}/profile")
@@ -50,21 +47,13 @@ def start_new(request: Request, name: str) -> SessionStateDTO:
 
 @router.post("/scenarios/{name}/continue")
 def resume(request: Request, name: str) -> SessionStateDTO:
-    session = _get_session(request)
-    state = session.resume(name)
-    if state is None:
-        raise HTTPException(status_code=404, detail="no progress for scenario")
-
+    state = _require_state(_get_session(request), name)
     return to_session_state_dto(state)
 
 
 @router.get("/scenarios/{name}/state")
 def get_state(request: Request, name: str) -> SessionStateDTO:
-    session = _get_session(request)
-    state = session.get_state(name)
-    if state is None:
-        raise HTTPException(status_code=404, detail="no progress for scenario")
-
+    state = _require_state(_get_session(request), name)
     return to_session_state_dto(state)
 
 
@@ -75,8 +64,7 @@ def submit_input(
     body: InputRequest,
 ) -> SessionStateDTO:
     session = _get_session(request)
-    if session.get_state(name) is None:
-        raise HTTPException(status_code=404, detail="no progress for scenario")
+    _require_state(session, name)
 
     state = session.submit_input(name, body.text)
     return to_session_state_dto(state)
@@ -84,23 +72,22 @@ def submit_input(
 
 @router.get("/scenarios/{name}/picture")
 def get_picture(request: Request, name: str) -> FileResponse:
-    session = _get_session(request)
-    state = session.get_state(name)
-    if state is None:
-        raise HTTPException(status_code=404, detail="no progress for scenario")
-
+    state = _require_state(_get_session(request), name)
     return FileResponse(state.picture_path)
 
 
 @router.get("/scenarios/{name}/voice")
 def get_voice(request: Request, name: str) -> FileResponse:
-    session = _get_session(request)
-    state = session.get_state(name)
-    if state is None:
-        raise HTTPException(status_code=404, detail="no progress for scenario")
-
+    state = _require_state(_get_session(request), name)
     return FileResponse(state.voice_path)
 
 
 def _get_session(request: Request) -> GameSession:
     return request.app.state.game_session
+
+
+def _require_state(session: GameSession, name: str) -> SessionState:
+    state = session.get_state(name)
+    if state is None:
+        raise HTTPException(status_code=404, detail="no progress for scenario")
+    return state
