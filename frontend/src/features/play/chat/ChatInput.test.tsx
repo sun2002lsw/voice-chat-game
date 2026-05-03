@@ -38,6 +38,17 @@ describe("ChatInput", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("ignores whitespace-only submissions", async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+    render(<ChatInput onSubmit={onSubmit} disabled={false} />);
+
+    await user.type(screen.getByRole("textbox"), "    ");
+    await user.click(screen.getByRole("button", { name: "전송" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("clears input after submit", async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();

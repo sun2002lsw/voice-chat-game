@@ -47,4 +47,28 @@ describe("NewOrContinueModal", () => {
 
     expect(onClose).toHaveBeenCalledOnce();
   });
+
+  it("calls onClose when backdrop (outside dialog) is clicked", async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<NewOrContinueModal {...baseProps} onClose={onClose} />);
+
+    const dialog = screen.getByRole("dialog");
+    const backdrop = dialog.parentElement;
+    expect(backdrop).not.toBeNull();
+
+    await user.click(backdrop!);
+
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT close when click is inside the dialog itself", async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(<NewOrContinueModal {...baseProps} onClose={onClose} />);
+
+    await user.click(screen.getByRole("dialog"));
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

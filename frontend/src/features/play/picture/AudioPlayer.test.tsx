@@ -16,4 +16,35 @@ describe("AudioPlayer", () => {
       "/api/scenarios/test_cafe/voice?step=1.%20%EC%9D%B8%EC%82%AC",
     );
   });
+
+  it("has autoPlay enabled", () => {
+    const { container } = render(
+      <AudioPlayer voiceUrl="/api/scenarios/test_cafe/voice" stepKey="step1" />,
+    );
+
+    expect(container.querySelector("audio")).toHaveAttribute("autoplay");
+  });
+
+  it("renders the controls UI (play/pause/seek/volume)", () => {
+    const { container } = render(
+      <AudioPlayer voiceUrl="/api/scenarios/test_cafe/voice" stepKey="step1" />,
+    );
+
+    expect(container.querySelector("audio")).toHaveAttribute("controls");
+  });
+
+  it("updates src when stepKey changes", () => {
+    const { container, rerender } = render(
+      <AudioPlayer voiceUrl="/api/scenarios/test_cafe/voice" stepKey="step1" />,
+    );
+
+    rerender(
+      <AudioPlayer voiceUrl="/api/scenarios/test_cafe/voice" stepKey="step2" />,
+    );
+
+    expect(container.querySelector("audio")).toHaveAttribute(
+      "src",
+      "/api/scenarios/test_cafe/voice?step=step2",
+    );
+  });
 });
