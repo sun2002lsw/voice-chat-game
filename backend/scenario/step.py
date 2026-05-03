@@ -2,7 +2,7 @@ from pathlib import Path
 
 from llm import LLM
 
-from .common import StepOutput
+from .common import StepOutput, VisitOverflow
 
 
 class Step:
@@ -15,6 +15,7 @@ class Step:
         picture: Path,
         complete_conditions: list[str],
         next_step_names: list[str],
+        visit_overflow: VisitOverflow | None = None,
     ) -> None:
         self.name = name
         self.scene = scene
@@ -23,6 +24,7 @@ class Step:
         self.picture = picture
         self.complete_conditions = complete_conditions
         self.next_step_names = next_step_names
+        self.visit_overflow = visit_overflow
         self.visit_count = 1
 
     @property
@@ -47,6 +49,10 @@ class Step:
         )
 
     def _decide_next_step(self, user_input: str) -> tuple[str, int | None]:
+        overflow_target = self._visit_overflow_target()
+        if overflow_target is not None:
+            return overflow_target, None
+
         has_conditions = any(self.complete_conditions)
         if not has_conditions:
             return self._next_step_without_conditions(), None
@@ -68,3 +74,10 @@ class Step:
         next_step_name = self.next_step_names[next_step_index]
 
         return next_step_name, next_step_index
+
+    def _visit_overflow_target(self) -> str | None:
+        if self.visit_overflow is None:
+            return None
+        if self.visit_count < self.visit_overflow.after:
+            return None
+        return self.visit_overflow.next_step

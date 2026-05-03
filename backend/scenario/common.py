@@ -13,3 +13,9 @@ class StepOutput:
 class ScenarioInfo:
     name: str
     picture: Path
+
+
+@dataclass(frozen=True)
+class VisitOverflow:
+    after: int
+    next_step: str

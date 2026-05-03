@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from scenario.common import VisitOverflow
 from scenario.loader import find_image
 from scenario.step import Step
 
@@ -340,3 +341,67 @@ def test_find_image_raises_when_no_image_in_folder(tmp_path):
 
     with pytest.raises(FileNotFoundError, match="my_label"):
         find_image(tmp_path, label="my_label")
+
+
+def test_invoke_redirects_to_overflow_at_threshold_without_calling_llm(
+    step_dir,
+    monkeypatch,
+):
+    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
+
+    step = Step(
+        name="loop",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["탈출", "계속"],
+        next_step_names=["escape", "loop"],
+        visit_overflow=VisitOverflow(after=3, next_step="redirect"),
+    )
+    step.visit_count = 3
+
+    result = step.invoke("아무 말")
+
+    assert result == ("redirect", None)
+
+
+def test_invoke_overflow_above_threshold_still_skips_llm(step_dir, monkeypatch):
+    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
+
+    step = Step(
+        name="loop",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["탈출", "계속"],
+        next_step_names=["escape", "loop"],
+        visit_overflow=VisitOverflow(after=3, next_step="redirect"),
+    )
+    step.visit_count = 100
+
+    result = step.invoke("아무 말")
+
+    assert result == ("redirect", None)
+
+
+def test_invoke_does_not_apply_overflow_below_threshold(step_dir, monkeypatch):
+    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
+    _FakeLLM.next_index = 1
+
+    step = Step(
+        name="loop",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["탈출", "계속"],
+        next_step_names=["escape", "loop"],
+        visit_overflow=VisitOverflow(after=3, next_step="redirect"),
+    )
+    step.visit_count = 2
+
+    result = step.invoke("계속 무시")
+
+    assert result == ("loop", 1)
