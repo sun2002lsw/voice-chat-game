@@ -38,22 +38,21 @@ export function Play() {
     };
   }, [name, navigate]);
 
+  const alert = errorMessage !== null && (
+    <div role="alert" className={styles.alert}>
+      <span>{errorMessage}</span>
+      <button
+        type="button"
+        onClick={() => setErrorMessage(null)}
+        aria-label="알림 닫기"
+      >
+        닫기
+      </button>
+    </div>
+  );
+
   if (name === undefined || state === null) {
-    if (errorMessage !== null) {
-      return (
-        <div role="alert" className={styles.alert}>
-          <span>{errorMessage}</span>
-          <button
-            type="button"
-            onClick={() => setErrorMessage(null)}
-            aria-label="알림 닫기"
-          >
-            닫기
-          </button>
-        </div>
-      );
-    }
-    return null;
+    return alert || null;
   }
 
   async function handleSubmit(text: string) {
@@ -93,18 +92,7 @@ export function Play() {
           onSubmit={handleSubmit}
         />
       </aside>
-      {errorMessage !== null && (
-        <div role="alert" className={styles.alert}>
-          <span>{errorMessage}</span>
-          <button
-            type="button"
-            onClick={() => setErrorMessage(null)}
-            aria-label="알림 닫기"
-          >
-            닫기
-          </button>
-        </div>
-      )}
+      {alert}
     </div>
   );
 }
