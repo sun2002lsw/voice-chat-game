@@ -9,6 +9,13 @@ description: 이 프로젝트에서 파이썬 코드를 작성하거나 수정�
 
 **복잡한 표현식은 중간 변수로 끊어서 작성한다.** 각 변수 이름이 그 자체로 "무엇을 계산하는가"를 설명하는 인라인 문서 역할을 한다. 읽는 사람에게 한 박자 쉴 자리를 준다.
 
+## 이유
+
+- 변수 이름이 곧 인라인 문서 역할을 한다 — 주석이 따로 필요 없다
+- 디버거에서 중간 값마다 멈춰서 확인할 수 있다
+- 인지 부하가 줄어든다 — 빽빽한 한 줄을 해독하는 것보다 의도가 명시된 세 줄을 읽는 게 쉽다
+- 예외나 스택 트레이스가 어느 변환 단계에서 터졌는지 정확히 가리킨다
+
 ## 하지 말 것
 
 ```python
@@ -32,21 +39,13 @@ conditions_text = "\n".join(numbered_conditions)
 
 ```python
 private_items = ((k, v) for k, v in d.items() if k.startswith("_"))
-positive_private = [(k, v) for k, v in private_items if v > 0]
-result = positive_private
+result = [(k, v) for k, v in private_items if v > 0]
 ```
 
 ```python
 active_items = [x for x in items if x.active]
 return sorted(active_items, key=lambda x: x.created_at, reverse=True)
 ```
-
-## 이유
-
-- 변수 이름이 곧 인라인 문서 역할을 한다 — 주석이 따로 필요 없다
-- 디버거에서 중간 값마다 멈춰서 확인할 수 있다
-- 인지 부하가 줄어든다 — 빽빽한 한 줄을 해독하는 것보다 의도가 명시된 세 줄을 읽는 게 쉽다
-- 예외나 스택 트레이스가 어느 변환 단계에서 터졌는지 정확히 가리킨다
 
 ## 한 줄로 둬도 되는 경우
 
