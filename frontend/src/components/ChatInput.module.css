@@ -1,0 +1,34 @@
+.form {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-top: 1px solid #ddd;
+}
+
+.input {
+  flex: 1;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.input:disabled {
+  background: #f0f0f0;
+  color: #999;
+}
+
+.sendButton {
+  padding: 0.5rem 1rem;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sendButton:disabled {
+  background: #aaa;
+  cursor: not-allowed;
+}

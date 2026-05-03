@@ -1,0 +1,21 @@
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr 380px;
+  height: 100vh;
+  width: 100vw;
+}
+
+.debug {
+  overflow: hidden;
+  border-right: 1px solid #ddd;
+}
+
+.picture {
+  overflow: hidden;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

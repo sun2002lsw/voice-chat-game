@@ -1,0 +1,43 @@
+.panel {
+  height: 100%;
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: #f7f7f7;
+  font-size: 0.85rem;
+}
+
+.block {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: white;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.4rem;
+}
+
+.label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.value {
+  word-break: break-word;
+}
+
+.list {
+  margin: 0.1rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.divider {
+  border: none;
+  border-top: 1px dashed #bbb;
+  margin: 0.5rem 0;
+}
