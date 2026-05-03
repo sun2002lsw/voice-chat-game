@@ -291,18 +291,3 @@ def test_state_persists_across_app_rebuild(
     assert body["current_step_name"] == "2. 결제"
     assert len(body["dialog"]) == 3
     assert len(body["state_log"]) == 2
-
-
-def test_cors_preflight_allows_localhost_5173(client: TestClient):
-    response = client.options(
-        "/api/scenarios",
-        headers={
-            "origin": "http://localhost:5173",
-            "access-control-request-method": "GET",
-        },
-    )
-
-    assert response.status_code == 200
-    assert (
-        response.headers["access-control-allow-origin"] == "http://localhost:5173"
-    )

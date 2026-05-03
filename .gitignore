@@ -221,3 +221,9 @@ __marimo__/
 .scenario/
 .character/
 .data/
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.tsbuildinfo

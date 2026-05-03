@@ -6,15 +6,18 @@
     "**/.venv": true,
     "**/__pycache__": true,
     "**/.ruff_cache": true,
-    "**/.pytest_cache": true
+    "**/.pytest_cache": true,
+    "**/node_modules": true
   },
   "search.exclude": {
     "**/.venv": true,
     "**/.ruff_cache": true,
-    "**/.pytest_cache": true
+    "**/.pytest_cache": true,
+    "**/node_modules": true
   },
   "files.watcherExclude": {
-    "**/.venv/**": true
+    "**/.venv/**": true,
+    "**/node_modules/**": true
   },
 
   "editor.formatOnSave": true,
