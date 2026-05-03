@@ -107,4 +107,39 @@ describe("Play", () => {
     await screen.findAllByText("어서오세요");
     expect(screen.getByRole("textbox")).toBeDisabled();
   });
+
+  it("shows an alert (and does not redirect) when fetchState 5xx", async () => {
+    server.use(
+      http.get("/api/scenarios/:name/state", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+
+    renderPlay("test_cafe");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("진행 상태를 불러오지 못했습니다.");
+    // LocationProbe renders only on path "/", so its absence confirms no redirect
+    expect(screen.queryByTestId("location")).toBeNull();
+  });
+
+  it("shows an alert when submitInput fails", async () => {
+    server.use(
+      http.get("/api/scenarios/:name/state", () =>
+        HttpResponse.json(sampleState),
+      ),
+      http.post("/api/scenarios/:name/input", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderPlay("test_cafe");
+
+    await screen.findAllByText("어서오세요");
+    await user.type(screen.getByRole("textbox"), "주문할게요{Enter}");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("전송에 실패했습니다.");
+  });
 });

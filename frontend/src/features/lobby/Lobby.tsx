@@ -15,10 +15,13 @@ function playPath(name: string): string {
 export function Lobby() {
   const [scenarios, setScenarios] = useState<ScenarioSummary[]>([]);
   const [selected, setSelected] = useState<ScenarioSummary | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchScenarios().then(setScenarios);
+    fetchScenarios()
+      .then(setScenarios)
+      .catch(() => setErrorMessage("시나리오 목록을 불러오지 못했습니다."));
   }, []);
 
   async function handleCardClick(scenario: ScenarioSummary) {
@@ -26,20 +29,32 @@ export function Lobby() {
       setSelected(scenario);
       return;
     }
-    await startNew(scenario.name);
-    navigate(playPath(scenario.name));
+    try {
+      await startNew(scenario.name);
+      navigate(playPath(scenario.name));
+    } catch {
+      setErrorMessage("새 게임을 시작하지 못했습니다.");
+    }
   }
 
   async function handleNewGame() {
     if (selected === null) return;
-    await startNew(selected.name);
-    navigate(playPath(selected.name));
+    try {
+      await startNew(selected.name);
+      navigate(playPath(selected.name));
+    } catch {
+      setErrorMessage("새 게임을 시작하지 못했습니다.");
+    }
   }
 
   async function handleContinue() {
     if (selected === null) return;
-    await resumeSession(selected.name);
-    navigate(playPath(selected.name));
+    try {
+      await resumeSession(selected.name);
+      navigate(playPath(selected.name));
+    } catch {
+      setErrorMessage("이어하기에 실패했습니다.");
+    }
   }
 
   function handleClose() {
@@ -49,6 +64,18 @@ export function Lobby() {
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>시나리오를 골라주세요</h1>
+      {errorMessage !== null && (
+        <div role="alert" className={styles.alert}>
+          <span>{errorMessage}</span>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            aria-label="알림 닫기"
+          >
+            닫기
+          </button>
+        </div>
+      )}
       <div className={styles.grid}>
         {scenarios.map((scenario) => (
           <ScenarioCard

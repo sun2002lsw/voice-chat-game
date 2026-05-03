@@ -147,4 +147,17 @@ describe("Lobby", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("shows an alert when fetchScenarios fails with 5xx", async () => {
+    server.use(
+      http.get("/api/scenarios", () =>
+        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+      ),
+    );
+
+    renderLobby();
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("시나리오 목록을 불러오지 못했습니다.");
+  });
 });

@@ -2,6 +2,16 @@ import type { ScenarioSummary, SessionState } from "../types";
 
 const BASE = "";
 
+export class HttpError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
 export async function fetchScenarios(): Promise<ScenarioSummary[]> {
   return getJson<ScenarioSummary[]>("/api/scenarios");
 }
@@ -28,7 +38,11 @@ export async function submitInput(
 async function getJson<T>(path: string): Promise<T> {
   const resp = await fetch(`${BASE}${path}`);
   if (!resp.ok) {
-    throw new Error(`GET ${path} failed: ${resp.status}`);
+    const detail = await safeReadText(resp);
+    throw new HttpError(
+      `GET ${path} failed: ${resp.status} ${detail}`,
+      resp.status,
+    );
   }
 
   return resp.json() as Promise<T>;
@@ -45,10 +59,22 @@ async function postJson<T>(path: string, body?: unknown): Promise<T> {
 
   const resp = await fetch(`${BASE}${path}`, init);
   if (!resp.ok) {
-    throw new Error(`POST ${path} failed: ${resp.status}`);
+    const detail = await safeReadText(resp);
+    throw new HttpError(
+      `POST ${path} failed: ${resp.status} ${detail}`,
+      resp.status,
+    );
   }
 
   return resp.json() as Promise<T>;
+}
+
+async function safeReadText(resp: Response): Promise<string> {
+  try {
+    return await resp.text();
+  } catch {
+    return "";
+  }
 }
 
 function scenarioPath(name: string, suffix: string): string {

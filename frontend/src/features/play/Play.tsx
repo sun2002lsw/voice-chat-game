@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { fetchState, submitInput } from "../../api/client";
+import { fetchState, HttpError, submitInput } from "../../api/client";
 import type { SessionState } from "../../types";
 
 import { ChatPanel } from "./chat/ChatPanel";
@@ -14,23 +14,56 @@ import styles from "./Play.module.css";
 export function Play() {
   const { name } = useParams<{ name: string }>();
   const [state, setState] = useState<SessionState | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (name === undefined) return;
+    let cancelled = false;
     fetchState(name)
-      .then(setState)
-      .catch(() => navigate("/"));
+      .then((s) => {
+        if (cancelled) return;
+        setState(s);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        if (err instanceof HttpError && err.status === 404) {
+          navigate("/");
+          return;
+        }
+        setErrorMessage("진행 상태를 불러오지 못했습니다.");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [name, navigate]);
 
   if (name === undefined || state === null) {
+    if (errorMessage !== null) {
+      return (
+        <div role="alert" className={styles.alert}>
+          <span>{errorMessage}</span>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            aria-label="알림 닫기"
+          >
+            닫기
+          </button>
+        </div>
+      );
+    }
     return null;
   }
 
   async function handleSubmit(text: string) {
     if (name === undefined) return;
-    const newState = await submitInput(name, text);
-    setState(newState);
+    try {
+      const newState = await submitInput(name, text);
+      setState(newState);
+    } catch {
+      setErrorMessage("전송에 실패했습니다.");
+    }
   }
 
   return (
@@ -60,6 +93,18 @@ export function Play() {
           onSubmit={handleSubmit}
         />
       </aside>
+      {errorMessage !== null && (
+        <div role="alert" className={styles.alert}>
+          <span>{errorMessage}</span>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            aria-label="알림 닫기"
+          >
+            닫기
+          </button>
+        </div>
+      )}
     </div>
   );
 }
