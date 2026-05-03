@@ -15,6 +15,7 @@ class ScenarioSummary:
 class SessionState:
     scenario_name: str
     current_step_name: str
+    current_visit_count: int
     is_terminal: bool
     picture_path: Path
     voice_path: Path

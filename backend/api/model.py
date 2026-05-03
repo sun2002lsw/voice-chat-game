@@ -30,6 +30,7 @@ class StateLogEntryDTO(BaseModel):
 class SessionStateDTO(BaseModel):
     scenario_name: str
     current_step_name: str
+    current_visit_count: int
     is_terminal: bool
     profile_url: str
     picture_url: str
@@ -69,6 +70,7 @@ def to_session_state_dto(state: SessionState) -> SessionStateDTO:
     return SessionStateDTO(
         scenario_name=state.scenario_name,
         current_step_name=state.current_step_name,
+        current_visit_count=state.current_visit_count,
         is_terminal=state.is_terminal,
         profile_url=f"/api/scenarios/{name}/profile",
         picture_url=f"/api/scenarios/{name}/picture",

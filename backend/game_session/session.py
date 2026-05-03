@@ -66,7 +66,6 @@ class GameSession:
 
     def submit_input(self, scenario_name: str, text: str) -> SessionState:
         scenario = self._manager.get(scenario_name)
-        pre_step_name = scenario.current_step.name
 
         llm_index = scenario.invoke(text)
 
@@ -77,15 +76,11 @@ class GameSession:
         new_script_path = scenario.get_output().script
         new_character_script = new_script_path.read_text(encoding="utf-8")
 
-        if new_step.name != pre_step_name:
-            new_character_dialog = DialogEntry(
-                role="character",
-                text=new_character_script,
-                created_at=now,
-            )
-        else:
-            new_character_dialog = None
-
+        new_character_dialog = DialogEntry(
+            role="character",
+            text=new_character_script,
+            created_at=now,
+        )
         new_state_entry = _state_entry_from_step(new_step, new_character_script)
 
         self._datastore.commit_turn(
@@ -109,6 +104,7 @@ class GameSession:
         return SessionState(
             scenario_name=scenario_name,
             current_step_name=scenario.current_step_name,
+            current_visit_count=scenario.current_step.visit_count,
             is_terminal=scenario.is_terminal,
             picture_path=output.picture,
             voice_path=output.voice,

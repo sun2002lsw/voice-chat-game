@@ -220,22 +220,22 @@ def test_submit_input_completes_first_entry_and_starts_next(
     assert started.llm_index is None
 
 
-def test_submit_input_skips_character_dialog_on_self_loop(
+def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
     game_session: GameSession,
 ):
     _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
     game_session.submit_input("test_cafe", "주문")
 
-    dialog_count_before = 3
+    state = game_session.submit_input("test_cafe", "한 번 더")
 
-    state = game_session.submit_input("test_cafe", "결제 후 추가 발화")
-
-    user_dialogs = [d for d in state.dialog if d.role == "user"]
-    assert len(state.dialog) == dialog_count_before + 1
-    assert len(user_dialogs) == 2
-    assert state.dialog[-1].role == "user"
-    assert state.dialog[-1].text == "결제 후 추가 발화"
+    assert len(state.dialog) == 5
+    assert state.dialog[-2].role == "user"
+    assert state.dialog[-2].text == "한 번 더"
+    assert state.dialog[-1].role == "character"
+    assert state.dialog[-1].text == "결제 두 번째 안내"
+    assert state.current_step_name == "2. 결제"
+    assert state.current_visit_count == 2
 
 
 def test_list_scenarios_marks_only_started_scenario_as_progressed(
