@@ -22,6 +22,12 @@ tts = [
     "google-genai>=0.4",
 ]
 
+[tool.setuptools]
+# 이 프로젝트는 라이브러리가 아니라 dependency 관리만을 위해 pyproject를 사용한다.
+# backend/, frontend/, tts/ 가 모두 top-level이라 setuptools 자동 탐색이 실패하므로
+# 패키지 빌드를 비활성화한다. (`pip install -e .` 로 dependency만 설치)
+py-modules = []
+
 [tool.pytest.ini_options]
 pythonpath = [".", "backend"]
 testpaths = ["backend/tests", "tts/tests"]
