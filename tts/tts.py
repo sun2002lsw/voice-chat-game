@@ -30,9 +30,13 @@ class TTS:
         steps_dir = scenario_dir / "steps"
         for entry in graph["steps"]:
             step_dir = steps_dir / entry["step"]
-            self._process_step(step_dir, character=entry["character"])
+            self._process_step(
+                step_dir,
+                character=entry["character"],
+                scene=entry["scene"],
+            )
 
-    def _process_step(self, step_dir: Path, *, character: str) -> None:
+    def _process_step(self, step_dir: Path, *, character: str, scene: str) -> None:
         voice_dir = step_dir / "voice"
         voice_dir.mkdir(exist_ok=True)
 
@@ -53,6 +57,7 @@ class TTS:
                 output_path=voice_file,
                 voice_name=voice_name,
                 director_note=director_note,
+                scene=scene,
             )
             elapsed = time.perf_counter() - start
 

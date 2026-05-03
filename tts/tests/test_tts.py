@@ -54,7 +54,7 @@ def fake_scenarios_root(tmp_path: Path, monkeypatch) -> Path:
 def test_run_calls_generate_voice_for_each_script(fake_scenarios_root, monkeypatch):
     calls = []
 
-    def fake_generate(*, text, output_path, voice_name, director_note):
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
         calls.append(output_path.name)
         output_path.touch()
         return _FAKE_USAGE
@@ -73,7 +73,7 @@ def test_run_skips_existing_voice_files(fake_scenarios_root, monkeypatch):
 
     calls = []
 
-    def fake_generate(*, text, output_path, voice_name, director_note):
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
         calls.append(output_path.name)
         output_path.touch()
         return _FAKE_USAGE
@@ -93,7 +93,7 @@ def test_run_skips_all_when_all_voice_files_exist(fake_scenarios_root, monkeypat
 
     calls = []
 
-    def fake_generate(*, text, output_path, voice_name, director_note):
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
         calls.append(output_path.name)
         output_path.touch()
         return _FAKE_USAGE
@@ -111,7 +111,7 @@ def test_run_uses_first_part_of_character_as_voice_name(
 ):
     captured_voice_names = []
 
-    def fake_generate(*, text, output_path, voice_name, director_note):
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
         captured_voice_names.append(voice_name)
         output_path.touch()
         return _FAKE_USAGE
@@ -129,7 +129,7 @@ def test_run_passes_character_file_content_as_director_note(
 ):
     captured_notes = []
 
-    def fake_generate(*, text, output_path, voice_name, director_note):
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
         captured_notes.append(director_note)
         output_path.touch()
         return _FAKE_USAGE
@@ -144,7 +144,7 @@ def test_run_passes_character_file_content_as_director_note(
 def test_run_passes_script_text_to_generate_voice(fake_scenarios_root, monkeypatch):
     captured_texts = []
 
-    def fake_generate(*, text, output_path, voice_name, director_note):
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
         captured_texts.append(text)
         output_path.touch()
         return _FAKE_USAGE
@@ -154,3 +154,18 @@ def test_run_passes_script_text_to_generate_voice(fake_scenarios_root, monkeypat
     TTS().run()
 
     assert sorted(captured_texts) == sorted(["어서오세요!", "결제 도와드릴까요?"])
+
+
+def test_run_passes_scene_from_graph_entry(fake_scenarios_root, monkeypatch):
+    captured_scenes = []
+
+    def fake_generate(*, text, output_path, voice_name, director_note, scene):
+        captured_scenes.append(scene)
+        output_path.touch()
+        return _FAKE_USAGE
+
+    monkeypatch.setattr("tts.tts.generate_voice", fake_generate)
+
+    TTS().run()
+
+    assert captured_scenes == ["직원이 인사한다", "직원이 인사한다"]

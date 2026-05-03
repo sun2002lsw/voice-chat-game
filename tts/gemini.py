@@ -42,9 +42,10 @@ def generate_voice(
     output_path: Path,
     voice_name: str,
     director_note: str,
+    scene: str,
 ) -> Usage:
     client = _build_client()
-    contents = _build_contents(text=text, director_note=director_note)
+    contents = _build_contents(text=text, director_note=director_note, scene=scene)
     config = _build_config(voice_name=voice_name)
 
     audio_chunks: list[bytes] = []
@@ -96,12 +97,20 @@ def _build_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def _build_contents(*, text: str, director_note: str) -> list[types.Content]:
+def _build_contents(
+    *,
+    text: str,
+    director_note: str,
+    scene: str,
+) -> list[types.Content]:
     prompt = (
         "Read the following transcript based on the director's note.\n"
         "\n"
         "# Director's note\n"
         f"{director_note}\n"
+        "\n"
+        "## Scene:\n"
+        f"{scene}\n"
         "\n"
         "## Transcript:\n"
         f"{text}"
