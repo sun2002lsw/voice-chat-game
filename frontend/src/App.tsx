@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 
-import { Lobby } from "./pages/Lobby";
-import { Play } from "./pages/Play";
+import { Lobby } from "./features/lobby/Lobby";
+import { Play } from "./features/play/Play";
 
 export function App() {
   return (

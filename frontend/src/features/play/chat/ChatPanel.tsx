@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import type { DialogEntry } from "../types";
+import type { DialogEntry } from "../../../types";
 
 import { ChatInput } from "./ChatInput";
 import styles from "./ChatPanel.module.css";

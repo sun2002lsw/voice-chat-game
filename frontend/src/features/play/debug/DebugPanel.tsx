@@ -1,4 +1,4 @@
-import type { StateLogEntry } from "../types";
+import type { StateLogEntry } from "../../../types";
 
 import styles from "./DebugPanel.module.css";
 

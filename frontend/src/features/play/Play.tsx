@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { fetchState, submitInput } from "../api/client";
-import { AudioPlayer } from "../components/AudioPlayer";
-import { ChatPanel } from "../components/ChatPanel";
-import { DebugPanel } from "../components/DebugPanel";
-import { PicturePanel } from "../components/PicturePanel";
-import type { SessionState } from "../types";
+import { fetchState, submitInput } from "../../api/client";
+import type { SessionState } from "../../types";
+
+import { ChatPanel } from "./chat/ChatPanel";
+import { DebugPanel } from "./debug/DebugPanel";
+import { AudioPlayer } from "./picture/AudioPlayer";
+import { PicturePanel } from "./picture/PicturePanel";
 
 import styles from "./Play.module.css";
 
@@ -37,11 +38,19 @@ export function Play() {
       <aside className={styles.debug}>
         <DebugPanel stateLog={state.state_log} />
       </aside>
-      <section className={styles.picture}>
-        <PicturePanel
-          pictureUrl={state.picture_url}
-          stepKey={state.current_step_name}
-        />
+      <section className={styles.center}>
+        <div className={styles.picture}>
+          <PicturePanel
+            pictureUrl={state.picture_url}
+            stepKey={state.current_step_name}
+          />
+        </div>
+        <div className={styles.audio}>
+          <AudioPlayer
+            voiceUrl={state.voice_url}
+            stepKey={state.current_step_name}
+          />
+        </div>
       </section>
       <aside className={styles.chat}>
         <ChatPanel
@@ -51,10 +60,6 @@ export function Play() {
           onSubmit={handleSubmit}
         />
       </aside>
-      <AudioPlayer
-        voiceUrl={state.voice_url}
-        stepKey={state.current_step_name}
-      />
     </div>
   );
 }

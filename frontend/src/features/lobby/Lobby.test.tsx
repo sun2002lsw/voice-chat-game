@@ -9,8 +9,8 @@ import {
 } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { sampleState } from "../test/mocks/handlers";
-import { server } from "../test/mocks/server";
+import { sampleState } from "../../test/mocks/handlers";
+import { server } from "../../test/mocks/server";
 
 import { Lobby } from "./Lobby";
 

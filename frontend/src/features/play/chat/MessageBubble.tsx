@@ -1,4 +1,4 @@
-import type { DialogEntry } from "../types";
+import type { DialogEntry } from "../../../types";
 
 import styles from "./MessageBubble.module.css";
 

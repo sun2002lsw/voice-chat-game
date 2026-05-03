@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { fetchScenarios, resumeSession, startNew } from "../api/client";
-import { NewOrContinueModal } from "../components/NewOrContinueModal";
-import { ScenarioCard } from "../components/ScenarioCard";
-import type { ScenarioSummary } from "../types";
+import { fetchScenarios, resumeSession, startNew } from "../../api/client";
+import { NewOrContinueModal } from "./NewOrContinueModal";
+import { ScenarioCard } from "./ScenarioCard";
+import type { ScenarioSummary } from "../../types";
 
 import styles from "./Lobby.module.css";
 

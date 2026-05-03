@@ -1,4 +1,4 @@
-import type { ScenarioSummary } from "../types";
+import type { ScenarioSummary } from "../../types";
 
 import styles from "./ScenarioCard.module.css";
 

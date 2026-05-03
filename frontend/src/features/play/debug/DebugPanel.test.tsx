@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { StateLogEntry } from "../types";
+import type { StateLogEntry } from "../../../types";
 
 import { DebugPanel } from "./DebugPanel";
 
