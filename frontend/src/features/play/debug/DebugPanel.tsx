@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import type { StateLogEntry } from "../../../types";
 
 import styles from "./DebugPanel.module.css";
@@ -7,11 +9,18 @@ type Props = {
 };
 
 export function DebugPanel({ stateLog }: Props) {
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [stateLog.length]);
+
   return (
     <div className={styles.panel}>
       {stateLog.map((entry, index) => (
         <Block key={index} entry={entry} />
       ))}
+      <div ref={endRef} />
     </div>
   );
 }
