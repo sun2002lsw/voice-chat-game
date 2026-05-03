@@ -14,6 +14,39 @@ def datastore(tmp_path: Path) -> Sqlite:
     return ds
 
 
+def test_init_schema_is_idempotent(tmp_path: Path):
+    db_path = tmp_path / "twice.db"
+    ds = Sqlite(db_path=db_path)
+
+    ds.init_schema()
+    ds.init_schema()
+
+    snapshot = ScenarioSnapshot(current_step_name="s", step_visits={"s": 1})
+    ds.save_progress("커피숍", snapshot)
+    assert ds.load_progress("커피숍") == snapshot
+
+
+def test_init_schema_preserves_existing_data_on_re_init(tmp_path: Path):
+    db_path = tmp_path / "preserve.db"
+    ds = Sqlite(db_path=db_path)
+    ds.init_schema()
+
+    snapshot = ScenarioSnapshot(current_step_name="s", step_visits={"s": 1})
+    ds.save_progress("커피숍", snapshot)
+
+    ds.init_schema()
+
+    assert ds.load_progress("커피숍") == snapshot
+
+
+def test_complete_last_state_entry_is_silent_noop_when_no_entry(datastore):
+    datastore.complete_last_state_entry(
+        "커피숍", user_input="x", llm_index=0,
+    )
+
+    assert datastore.load_state_log("커피숍") == []
+
+
 def test_load_progress_returns_none_when_empty(datastore):
     assert datastore.load_progress("회사 면접") is None
 
@@ -251,6 +284,52 @@ def test_complete_last_state_entry_fills_user_input_and_llm_index(datastore):
     assert completed.llm_index == 0
     assert completed.step_name == "step1"
     assert completed.character_script == "첫 대사"
+
+
+def test_complete_last_state_entry_only_touches_latest_entry_of_scenario(datastore):
+    older_entry = StateLogEntry(
+        step_name="step1",
+        visit_count=1,
+        conditions=["c1"],
+        next_step_names=["step2"],
+        character_script="첫 대사",
+        user_input="첫 입력",
+        llm_index=0,
+    )
+    latest_entry = StateLogEntry(
+        step_name="step2",
+        visit_count=1,
+        conditions=[],
+        next_step_names=[],
+        character_script="두번째 대사",
+        user_input="",
+        llm_index=None,
+    )
+    datastore.append_state_log("커피숍", older_entry)
+    datastore.append_state_log("커피숍", latest_entry)
+
+    other_entry = StateLogEntry(
+        step_name="o-step",
+        visit_count=1,
+        conditions=[],
+        next_step_names=[],
+        character_script="다른",
+        user_input="",
+        llm_index=None,
+    )
+    datastore.append_state_log("다른", other_entry)
+
+    datastore.complete_last_state_entry(
+        "커피숍", user_input="새 입력", llm_index=2,
+    )
+
+    cafe_log = datastore.load_state_log("커피숍")
+    assert cafe_log[0] == older_entry
+    assert cafe_log[1].user_input == "새 입력"
+    assert cafe_log[1].llm_index == 2
+
+    other_log = datastore.load_state_log("다른")
+    assert other_log == [other_entry]
 
 
 def test_commit_turn_completes_last_entry_and_appends_new_state_entry(datastore):

@@ -211,3 +211,23 @@ def test_restore_sets_current_step_and_visit_counts_from_snapshot():
     assert scenario.current_step is second_step
     assert first_step.visit_count == 5
     assert second_step.visit_count == 3
+
+
+def test_restore_updates_current_step_name_and_is_terminal():
+    first_step = _FakeStep("step1", next_step_name="step2")
+    second_step = _FakeStep("step2", next_step_name="step2", is_terminal=True)
+
+    scenario = Scenario(
+        name="t", picture=Path("p.png"), steps=[first_step, second_step]
+    )
+    assert scenario.current_step_name == "step1"
+    assert scenario.is_terminal is False
+
+    snapshot = ScenarioSnapshot(
+        current_step_name="step2",
+        step_visits={"step1": 1, "step2": 1},
+    )
+    scenario.restore(snapshot)
+
+    assert scenario.current_step_name == "step2"
+    assert scenario.is_terminal is True

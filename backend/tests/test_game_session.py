@@ -238,6 +238,45 @@ def test_submit_input_skips_character_dialog_on_self_loop(
     assert state.dialog[-1].text == "결제 후 추가 발화"
 
 
+def test_list_scenarios_marks_only_started_scenario_as_progressed(
+    tmp_path: Path,
+    scenarios_root: Path,
+    monkeypatch,
+):
+    interview_dir = scenarios_root / "test_interview"
+    interview_dir.mkdir()
+    (interview_dir / "picture.png").touch()
+    interview_graph = {
+        "scenario": "test_interview",
+        "steps": [
+            {
+                "step": "1. 시작",
+                "scene": "면접 시작",
+                "character": "Interviewer",
+                "complete_conditions": [],
+                "next_steps": [],
+            },
+        ],
+    }
+    _write_graph(interview_dir, interview_graph)
+    _make_step_dir(interview_dir, "1. 시작", script_text="안녕하세요")
+
+    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
+    datastore = Sqlite(db_path=tmp_path / "game.db")
+    datastore.init_schema()
+    session = GameSession(
+        datastore=datastore, scenario_manager=ScenarioManager(),
+    )
+
+    session.start_new("test_cafe")
+
+    summaries = session.list_scenarios()
+    summaries_by_name = {s.name: s for s in summaries}
+
+    assert summaries_by_name["test_cafe"].has_progress is True
+    assert summaries_by_name["test_interview"].has_progress is False
+
+
 def test_resume_returns_none_when_no_progress(game_session: GameSession):
     assert game_session.resume("test_cafe") is None
 

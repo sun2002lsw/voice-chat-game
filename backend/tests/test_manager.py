@@ -157,6 +157,35 @@ def test_init_raises_when_step_config_invalid(tmp_path, monkeypatch):
         ScenarioManager()
 
 
+def test_init_raises_when_conditions_and_next_steps_length_mismatch(
+    tmp_path,
+    monkeypatch,
+):
+    bad_root = tmp_path / "bad_scenarios"
+    bad_dir = bad_root / "bad_scenario"
+    bad_dir.mkdir(parents=True)
+    (bad_dir / "picture.png").touch()
+    bad_graph = {
+        "scenario": "bad_scenario",
+        "steps": [
+            {
+                "step": "step1",
+                "scene": "...",
+                "character": "X",
+                "complete_conditions": ["c1", "c2"],
+                "next_steps": ["only_one"],
+            },
+        ],
+    }
+    _write_graph(bad_dir, bad_graph)
+    _make_step_dirs(bad_dir, ["step1"])
+
+    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", bad_root)
+
+    with pytest.raises(ValueError, match="길이가 다릅니다"):
+        ScenarioManager()
+
+
 def test_init_raises_when_step_picture_missing(tmp_path, monkeypatch):
     root = tmp_path / "scenarios"
     scenario_dir = _build_minimal_scenario(root)

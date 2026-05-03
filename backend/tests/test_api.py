@@ -249,6 +249,39 @@ def test_get_voice_returns_404_when_no_progress(client: TestClient):
     assert response.status_code == 404
 
 
+def test_post_input_returns_422_when_text_field_missing(client: TestClient):
+    client.post("/api/scenarios/test_cafe/new")
+
+    response = client.post("/api/scenarios/test_cafe/input", json={})
+
+    assert response.status_code == 422
+
+
+def test_get_picture_reflects_current_step_after_transition(
+    tmp_path: Path,
+    scenarios_root: Path,
+    monkeypatch,
+):
+    distinct_payment_picture = b"\x89PNG\r\n\x1a\nPAYMENT"
+    payment_step_dir = scenarios_root / "test_cafe" / "steps" / "2. 결제"
+    (payment_step_dir / "picture.png").write_bytes(distinct_payment_picture)
+
+    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
+    app = build_app(db_path=tmp_path / "game.db")
+    client = TestClient(app)
+
+    client.post("/api/scenarios/test_cafe/new")
+    client.post(
+        "/api/scenarios/test_cafe/input",
+        json={"text": "주문할게요"},
+    )
+
+    response = client.get("/api/scenarios/test_cafe/picture")
+
+    assert response.status_code == 200
+    assert response.content == distinct_payment_picture
+
+
 def test_post_input_marks_is_terminal_true_at_terminal_step(client: TestClient):
     client.post("/api/scenarios/test_cafe/new")
 

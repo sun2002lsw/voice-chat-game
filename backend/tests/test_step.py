@@ -208,6 +208,24 @@ def test_invoke_increments_visit_count_on_each_call(step_dir, monkeypatch):
     assert step.visit_count == 3
 
 
+def test_invoke_raises_when_llm_returns_out_of_range_index(step_dir, monkeypatch):
+    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
+    _FakeLLM.next_index = 99
+
+    step = Step(
+        name="1. 어서오세요",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=["메뉴 주문", "메뉴 질문"],
+        next_step_names=["2. 결제", "1. 안내"],
+    )
+
+    with pytest.raises(IndexError):
+        step.invoke("입력")
+
+
 def test_invoke_increments_visit_count_even_when_no_conditions(step_dir, monkeypatch):
     monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
 
