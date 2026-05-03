@@ -165,6 +165,7 @@ export function Play() {
           <PicturePanel
             pictureUrl={state.picture_url}
             stepKey={state.current_step_name}
+            visitCount={state.current_visit_count}
             onAspectChange={handleAspectChange}
           />
         </div>
@@ -172,6 +173,7 @@ export function Play() {
           <AudioPlayer
             voiceUrl={state.voice_url}
             stepKey={state.current_step_name}
+            visitCount={state.current_visit_count}
           />
         </div>
       </section>

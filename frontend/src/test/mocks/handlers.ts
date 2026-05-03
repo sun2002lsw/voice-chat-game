@@ -12,6 +12,7 @@ export const sampleScenario: ScenarioSummary = {
 export const sampleState: SessionState = {
   scenario_name: "test_cafe",
   current_step_name: "1. 인사",
+  current_visit_count: 1,
   is_terminal: false,
   profile_url: "/api/scenarios/test_cafe/profile",
   picture_url: "/api/scenarios/test_cafe/picture",

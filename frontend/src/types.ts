@@ -23,6 +23,7 @@ export type StateLogEntry = {
 export type SessionState = {
   scenario_name: string;
   current_step_name: string;
+  current_visit_count: number;
   is_terminal: boolean;
   profile_url: string;
   picture_url: string;

@@ -6,6 +6,7 @@ import styles from "./AudioPlayer.module.css";
 type Props = {
   voiceUrl: string;
   stepKey: string;
+  visitCount: number;
 };
 
 function formatTime(seconds: number): string {
@@ -16,8 +17,11 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ voiceUrl, stepKey }: Props) {
-  const src = `${voiceUrl}?step=${encodeURIComponent(stepKey)}`;
+export function AudioPlayer({ voiceUrl, stepKey, visitCount }: Props) {
+  const src =
+    `${voiceUrl}?step=${encodeURIComponent(stepKey)}&v=${visitCount}`;
+  const cacheKey = `${stepKey}#${visitCount}`;
+
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,7 +32,7 @@ export function AudioPlayer({ voiceUrl, stepKey }: Props) {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [stepKey]);
+  }, [stepKey, visitCount]);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -56,7 +60,7 @@ export function AudioPlayer({ voiceUrl, stepKey }: Props) {
   return (
     <div className={styles.player}>
       <audio
-        key={stepKey}
+        key={cacheKey}
         ref={audioRef}
         src={src}
         autoPlay
