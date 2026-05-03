@@ -1,0 +1,45 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  min-width: 280px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.message {
+  margin: 0 0 1rem;
+  color: #555;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.actions button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actions button:hover {
+  background: #eee;
+}

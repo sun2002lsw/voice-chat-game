@@ -1,0 +1,37 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.card:hover {
+  background: #f5f5f5;
+}
+
+.profile {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.progressBadge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+  color: #fff;
+  background: #4a90e2;
+  border-radius: 4px;
+}
