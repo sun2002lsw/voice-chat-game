@@ -1,2 +1,56 @@
-// 백엔드 API 클라이언트. Step B 에서 채움.
-export const BASE = "";
+import type { ScenarioSummary, SessionState } from "../types";
+
+const BASE = "";
+
+export async function fetchScenarios(): Promise<ScenarioSummary[]> {
+  return getJson<ScenarioSummary[]>("/api/scenarios");
+}
+
+export async function startNew(name: string): Promise<SessionState> {
+  return postJson<SessionState>(scenarioPath(name, "/new"));
+}
+
+export async function resumeSession(name: string): Promise<SessionState> {
+  return postJson<SessionState>(scenarioPath(name, "/continue"));
+}
+
+export async function fetchState(name: string): Promise<SessionState> {
+  return getJson<SessionState>(scenarioPath(name, "/state"));
+}
+
+export async function submitInput(
+  name: string,
+  text: string,
+): Promise<SessionState> {
+  return postJson<SessionState>(scenarioPath(name, "/input"), { text });
+}
+
+async function getJson<T>(path: string): Promise<T> {
+  const resp = await fetch(`${BASE}${path}`);
+  if (!resp.ok) {
+    throw new Error(`GET ${path} failed: ${resp.status}`);
+  }
+
+  return resp.json() as Promise<T>;
+}
+
+async function postJson<T>(path: string, body?: unknown): Promise<T> {
+  const init: RequestInit = {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+  };
+  if (body !== undefined) {
+    init.body = JSON.stringify(body);
+  }
+
+  const resp = await fetch(`${BASE}${path}`, init);
+  if (!resp.ok) {
+    throw new Error(`POST ${path} failed: ${resp.status}`);
+  }
+
+  return resp.json() as Promise<T>;
+}
+
+function scenarioPath(name: string, suffix: string): string {
+  return `/api/scenarios/${encodeURIComponent(name)}${suffix}`;
+}
