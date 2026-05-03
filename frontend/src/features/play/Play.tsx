@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { fetchState, HttpError, submitInput } from "../../api/client";
-import type { SessionState } from "../../types";
+import type { DialogEntry, SessionState } from "../../types";
 
 import { ChatPanel } from "./chat/ChatPanel";
 import { DebugPanel } from "./debug/DebugPanel";
@@ -11,11 +11,70 @@ import { PicturePanel } from "./picture/PicturePanel";
 
 import styles from "./Play.module.css";
 
+const MIN_LEFT_WIDTH = 320;
+const MIN_RIGHT_WIDTH = 380;
+const MIN_CENTER_WIDTH = 200;
+const FALLBACK_AUDIO_HEIGHT = 60;
+
 export function Play() {
   const { name } = useParams<{ name: string }>();
   const [state, setState] = useState<SessionState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingUserText, setPendingUserText] = useState<string | null>(null);
+  const [centerWidth, setCenterWidth] = useState<number | null>(null);
+  const [pictureHeight, setPictureHeight] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLDivElement>(null);
+  const aspectRef = useRef<number | null>(null);
+
+  const recomputeLayout = useCallback(() => {
+    const aspect = aspectRef.current;
+    const layout = layoutRef.current;
+    if (aspect === null || layout === null) return;
+
+    const layoutH = layout.clientHeight;
+    const layoutW = layout.clientWidth;
+
+    // Audio's natural (un-grown) height is the AudioPlayer content height
+    // — read from its first child, since the wrapper itself may already be
+    // expanded by a previous layout pass.
+    const playerEl = audioRef.current?.firstElementChild as
+      | HTMLElement
+      | undefined;
+    const minAudioH = playerEl?.offsetHeight ?? FALLBACK_AUDIO_HEIGHT;
+
+    const maxPictureH = layoutH - minAudioH;
+    const idealCenterW = maxPictureH * aspect;
+    const maxCenterW = layoutW - MIN_LEFT_WIDTH - MIN_RIGHT_WIDTH;
+
+    let nextCenterW: number;
+    let nextPictureH: number;
+    if (idealCenterW <= maxCenterW) {
+      nextCenterW = Math.max(MIN_CENTER_WIDTH, idealCenterW);
+      nextPictureH = maxPictureH;
+    } else {
+      nextCenterW = maxCenterW;
+      nextPictureH = maxCenterW / aspect;
+    }
+
+    setCenterWidth(nextCenterW);
+    setPictureHeight(nextPictureH);
+  }, []);
+
+  const handleAspectChange = useCallback(
+    (aspect: number) => {
+      aspectRef.current = aspect;
+      recomputeLayout();
+    },
+    [recomputeLayout],
+  );
+
+  useEffect(() => {
+    window.addEventListener("resize", recomputeLayout);
+    return () => window.removeEventListener("resize", recomputeLayout);
+  }, [recomputeLayout]);
 
   useEffect(() => {
     if (name === undefined) return;
@@ -57,27 +116,59 @@ export function Play() {
 
   async function handleSubmit(text: string) {
     if (name === undefined) return;
+    if (pendingUserText !== null) return;
+
+    setPendingUserText(text);
     try {
       const newState = await submitInput(name, text);
       setState(newState);
     } catch {
       setErrorMessage("전송에 실패했습니다.");
+    } finally {
+      setPendingUserText(null);
     }
   }
 
+  const isPending = pendingUserText !== null;
+  const dialog: DialogEntry[] = isPending
+    ? [
+        ...state.dialog,
+        {
+          role: "user",
+          text: pendingUserText,
+          created_at: new Date().toISOString(),
+        },
+      ]
+    : state.dialog;
+
+  const layoutStyle =
+    centerWidth !== null
+      ? {
+          gridTemplateColumns:
+            `minmax(${MIN_LEFT_WIDTH}px, 1fr) ${centerWidth}px ` +
+            `minmax(${MIN_RIGHT_WIDTH}px, 1fr)`,
+        }
+      : undefined;
+
+  const centerStyle =
+    pictureHeight !== null
+      ? { gridTemplateRows: `${pictureHeight}px 1fr` }
+      : undefined;
+
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} ref={layoutRef} style={layoutStyle}>
       <aside className={styles.debug}>
         <DebugPanel stateLog={state.state_log} />
       </aside>
-      <section className={styles.center}>
+      <section className={styles.center} style={centerStyle}>
         <div className={styles.picture}>
           <PicturePanel
             pictureUrl={state.picture_url}
             stepKey={state.current_step_name}
+            onAspectChange={handleAspectChange}
           />
         </div>
-        <div className={styles.audio}>
+        <div className={styles.audio} ref={audioRef}>
           <AudioPlayer
             voiceUrl={state.voice_url}
             stepKey={state.current_step_name}
@@ -87,9 +178,11 @@ export function Play() {
       <aside className={styles.chat}>
         <ChatPanel
           scenarioName={state.scenario_name}
-          dialog={state.dialog}
+          dialog={dialog}
           isTerminal={state.is_terminal}
+          isPending={isPending}
           onSubmit={handleSubmit}
+          onHome={() => navigate("/")}
         />
       </aside>
       {alert}

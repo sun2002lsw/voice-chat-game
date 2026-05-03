@@ -7,11 +7,44 @@
 }
 
 .header {
+  position: relative;
   margin: 0;
   padding: 0.75rem 1rem;
-  font-size: 1rem;
   background: #4a90e2;
   color: white;
+}
+
+.homeButton {
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.homeButton:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.homeButton:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
   text-align: center;
 }
 

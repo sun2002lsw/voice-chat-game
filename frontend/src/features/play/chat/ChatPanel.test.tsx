@@ -26,7 +26,9 @@ describe("ChatPanel", () => {
         scenarioName="카페 주문"
         dialog={dialog}
         isTerminal={false}
+        isPending={false}
         onSubmit={() => {}}
+        onHome={() => {}}
       />,
     );
 
@@ -39,7 +41,9 @@ describe("ChatPanel", () => {
         scenarioName="카페 주문"
         dialog={dialog}
         isTerminal={false}
+        isPending={false}
         onSubmit={() => {}}
+        onHome={() => {}}
       />,
     );
 
@@ -53,11 +57,47 @@ describe("ChatPanel", () => {
         scenarioName="카페 주문"
         dialog={dialog}
         isTerminal={true}
+        isPending={false}
         onSubmit={() => {}}
+        onHome={() => {}}
       />,
     );
 
     expect(screen.getByRole("textbox")).toBeDisabled();
+  });
+
+  it("blocks submit and shows typing indicator when isPending", () => {
+    render(
+      <ChatPanel
+        scenarioName="카페 주문"
+        dialog={dialog}
+        isTerminal={false}
+        isPending={true}
+        onSubmit={() => {}}
+        onHome={() => {}}
+      />,
+    );
+
+    expect(screen.getByRole("textbox")).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "전송" })).toBeDisabled();
+    expect(screen.getByRole("status", { name: "응답 작성 중" })).toBeInTheDocument();
+  });
+
+  it("does not show typing indicator when not pending", () => {
+    render(
+      <ChatPanel
+        scenarioName="카페 주문"
+        dialog={dialog}
+        isTerminal={false}
+        isPending={false}
+        onSubmit={() => {}}
+        onHome={() => {}}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("status", { name: "응답 작성 중" }),
+    ).not.toBeInTheDocument();
   });
 
   it("forwards user submission to onSubmit prop", async () => {
@@ -68,12 +108,33 @@ describe("ChatPanel", () => {
         scenarioName="카페 주문"
         dialog={dialog}
         isTerminal={false}
+        isPending={false}
         onSubmit={onSubmit}
+        onHome={() => {}}
       />,
     );
 
     await user.type(screen.getByRole("textbox"), "다음 입력{Enter}");
 
     expect(onSubmit).toHaveBeenCalledWith("다음 입력");
+  });
+
+  it("calls onHome when 로비로 가기 button is clicked", async () => {
+    const onHome = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ChatPanel
+        scenarioName="카페 주문"
+        dialog={dialog}
+        isTerminal={false}
+        isPending={false}
+        onSubmit={() => {}}
+        onHome={onHome}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "로비로 가기" }));
+
+    expect(onHome).toHaveBeenCalledOnce();
   });
 });
