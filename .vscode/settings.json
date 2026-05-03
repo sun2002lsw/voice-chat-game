@@ -7,13 +7,15 @@
     "**/__pycache__": true,
     "**/.ruff_cache": true,
     "**/.pytest_cache": true,
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/*.egg-info": true
   },
   "search.exclude": {
     "**/.venv": true,
     "**/.ruff_cache": true,
     "**/.pytest_cache": true,
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/*.egg-info": true
   },
   "files.watcherExclude": {
     "**/.venv/**": true,

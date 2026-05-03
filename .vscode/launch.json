@@ -2,14 +2,31 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: backend/main.py",
+      "name": "Backend (debug)",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/backend/main.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "python": "${workspaceFolder}/.venv/Scripts/python.exe",
-      "justMyCode": true
+      "justMyCode": true,
+      "preLaunchTask": "TTS"
+    },
+    {
+      "name": "Frontend dev",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run all",
+      "configurations": ["Backend (debug)", "Frontend dev"],
+      "stopAll": true
     }
   ]
 }
