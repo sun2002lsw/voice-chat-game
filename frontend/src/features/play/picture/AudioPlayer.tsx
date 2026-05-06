@@ -7,6 +7,7 @@ type Props = {
   voiceUrl: string;
   stepKey: string;
   visitCount: number;
+  onEnded?: () => void;
 };
 
 function formatTime(seconds: number): string {
@@ -17,7 +18,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ voiceUrl, stepKey, visitCount }: Props) {
+export function AudioPlayer({ voiceUrl, stepKey, visitCount, onEnded }: Props) {
   const src =
     `${voiceUrl}?step=${encodeURIComponent(stepKey)}&v=${visitCount}`;
   const cacheKey = `${stepKey}#${visitCount}`;
@@ -70,7 +71,10 @@ export function AudioPlayer({ voiceUrl, stepKey, visitCount }: Props) {
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          onEnded?.();
+        }}
       />
       <button
         type="button"

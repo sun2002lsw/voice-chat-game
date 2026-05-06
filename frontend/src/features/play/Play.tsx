@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { fetchState, HttpError, submitInput } from "../../api/client";
+import { advance, fetchState, HttpError, submitInput } from "../../api/client";
 import type { DialogEntry, SessionState } from "../../types";
 
 import { ChatPanel } from "./chat/ChatPanel";
@@ -21,6 +21,7 @@ export function Play() {
   const [state, setState] = useState<SessionState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingUserText, setPendingUserText] = useState<string | null>(null);
+  const [isAdvancing, setIsAdvancing] = useState(false);
   const [centerWidth, setCenterWidth] = useState<number | null>(null);
   const [pictureHeight, setPictureHeight] = useState<number | null>(null);
   const navigate = useNavigate();
@@ -117,6 +118,7 @@ export function Play() {
   async function handleSubmit(text: string) {
     if (name === undefined) return;
     if (pendingUserText !== null) return;
+    if (isAdvancing) return;
 
     setPendingUserText(text);
     try {
@@ -126,6 +128,24 @@ export function Play() {
       setErrorMessage("전송에 실패했습니다.");
     } finally {
       setPendingUserText(null);
+    }
+  }
+
+  async function handleAudioEnded() {
+    if (name === undefined) return;
+    if (state === null) return;
+    if (!state.is_auto_advance) return;
+    if (pendingUserText !== null) return;
+    if (isAdvancing) return;
+
+    setIsAdvancing(true);
+    try {
+      const newState = await advance(name);
+      setState(newState);
+    } catch {
+      setErrorMessage("자동 진행에 실패했습니다.");
+    } finally {
+      setIsAdvancing(false);
     }
   }
 
@@ -174,6 +194,7 @@ export function Play() {
             voiceUrl={state.voice_url}
             stepKey={state.current_step_name}
             visitCount={state.current_visit_count}
+            onEnded={handleAudioEnded}
           />
         </div>
       </section>
@@ -182,7 +203,7 @@ export function Play() {
           scenarioName={state.scenario_name}
           dialog={dialog}
           isTerminal={state.is_terminal}
-          isPending={isPending}
+          isPending={isPending || isAdvancing}
           onSubmit={handleSubmit}
           onHome={() => navigate("/")}
         />

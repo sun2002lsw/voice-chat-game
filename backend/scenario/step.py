@@ -32,6 +32,14 @@ class Step:
         return not self.next_step_names
 
     @property
+    def is_auto_advance(self) -> bool:
+        if self.is_terminal:
+            return False
+        if any(self.complete_conditions):
+            return False
+        return len(self.next_step_names) == 1
+
+    @property
     def conditions(self) -> list[str]:
         return [c for c in self.complete_conditions if c]
 

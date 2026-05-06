@@ -215,7 +215,7 @@ class Sqlite:
         snapshot: ScenarioSnapshot,
         completed_user_input: str,
         completed_llm_index: int | None,
-        user_dialog: DialogEntry,
+        user_dialog: DialogEntry | None,
         new_character_dialog: DialogEntry | None,
         new_state_entry: StateLogEntry,
     ) -> None:
@@ -227,7 +227,8 @@ class Sqlite:
                 completed_llm_index,
             )
             self._upsert_progress(conn, scenario_name, snapshot)
-            self._insert_dialog(conn, scenario_name, user_dialog)
+            if user_dialog is not None:
+                self._insert_dialog(conn, scenario_name, user_dialog)
             if new_character_dialog is not None:
                 self._insert_dialog(conn, scenario_name, new_character_dialog)
             self._insert_state_log(conn, scenario_name, new_state_entry)

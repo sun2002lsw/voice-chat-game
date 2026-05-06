@@ -27,6 +27,10 @@ class Scenario:
     def is_terminal(self) -> bool:
         return self.current_step.is_terminal
 
+    @property
+    def is_auto_advance(self) -> bool:
+        return self.current_step.is_auto_advance
+
     def invoke(self, user_input: str) -> int | None:
         next_step_name, llm_index = self.current_step.invoke(user_input)
         self.current_step = self._steps_by_name[next_step_name]

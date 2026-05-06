@@ -1,5 +1,5 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { AudioPlayer } from "./AudioPlayer";
 
@@ -66,6 +66,24 @@ describe("AudioPlayer", () => {
       "src",
       "/api/scenarios/test_cafe/voice?step=step2&v=1",
     );
+  });
+
+  it("invokes onEnded callback when audio playback finishes", () => {
+    const onEnded = vi.fn();
+    const { container } = render(
+      <AudioPlayer
+        voiceUrl="/api/scenarios/test_cafe/voice"
+        stepKey="step1"
+        visitCount={1}
+        onEnded={onEnded}
+      />,
+    );
+
+    const audio = container.querySelector("audio");
+    expect(audio).not.toBeNull();
+    fireEvent.ended(audio!);
+
+    expect(onEnded).toHaveBeenCalledTimes(1);
   });
 
   it("updates src when visitCount changes (self-loop cache busting)", () => {

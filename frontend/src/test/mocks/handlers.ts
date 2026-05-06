@@ -14,6 +14,7 @@ export const sampleState: SessionState = {
   current_step_name: "1. 인사",
   current_visit_count: 1,
   is_terminal: false,
+  is_auto_advance: false,
   profile_url: "/api/scenarios/test_cafe/profile",
   picture_url: "/api/scenarios/test_cafe/picture",
   voice_url: "/api/scenarios/test_cafe/voice",
