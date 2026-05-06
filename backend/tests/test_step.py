@@ -6,6 +6,8 @@ from scenario.common import VisitOverflow
 from scenario.loader import find_image
 from scenario.step import Step
 
+SCRIPT_COUNT = 3
+
 
 @pytest.fixture
 def step_dir(tmp_path: Path) -> Path:
@@ -13,7 +15,8 @@ def step_dir(tmp_path: Path) -> Path:
     d.mkdir()
     (d / "picture.png").touch()
     (d / "script").mkdir()
-    (d / "script" / "1.txt").write_text("hello")
+    for i in range(1, SCRIPT_COUNT + 1):
+        (d / "script" / f"{i}.txt").write_text(f"line {i}")
     (d / "voice").mkdir()
     return d
 
@@ -63,6 +66,7 @@ def test_get_output_returns_paths_for_first_visit(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=[],
         next_step_names=[],
+        script_count=SCRIPT_COUNT,
     )
 
     output = step.get_output()
@@ -83,6 +87,7 @@ def test_get_output_reflects_visit_count_after_invoke(step_dir, monkeypatch):
         picture=step_dir / "picture.png",
         complete_conditions=[],
         next_step_names=[],
+        script_count=SCRIPT_COUNT,
     )
 
     step.invoke("입력")
@@ -121,6 +126,7 @@ def test_invoke_returns_step_name_and_llm_index_tuple(
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문", "메뉴 질문"],
         next_step_names=["2. 결제", "1. 어서오세요-안내"],
+        script_count=SCRIPT_COUNT,
     )
 
     result = step.invoke("아메리카노 주세요")
@@ -139,6 +145,7 @@ def test_invoke_passes_scene_conditions_and_user_input_to_llm(step_dir, monkeypa
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문", "메뉴 질문"],
         next_step_names=["2. 결제", "1. 어서오세요-안내"],
+        script_count=SCRIPT_COUNT,
     )
 
     step.invoke("아메리카노 주세요")
@@ -161,6 +168,7 @@ def test_invoke_skips_llm_when_complete_conditions_empty(step_dir, monkeypatch):
         picture=step_dir / "picture.png",
         complete_conditions=[""],
         next_step_names=["1. 어서오세요"],
+        script_count=SCRIPT_COUNT,
     )
 
     result = step.invoke("아무 입력")
@@ -182,6 +190,7 @@ def test_invoke_returns_self_name_when_no_conditions_and_no_next_steps(
         picture=step_dir / "picture.png",
         complete_conditions=[],
         next_step_names=[],
+        script_count=SCRIPT_COUNT,
     )
 
     result = step.invoke("아무 입력")
@@ -200,6 +209,7 @@ def test_invoke_increments_visit_count_on_each_call(step_dir, monkeypatch):
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문"],
         next_step_names=["2. 결제"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.visit_count == 1
@@ -221,6 +231,7 @@ def test_invoke_raises_when_llm_returns_out_of_range_index(step_dir, monkeypatch
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문", "메뉴 질문"],
         next_step_names=["2. 결제", "1. 안내"],
+        script_count=SCRIPT_COUNT,
     )
 
     with pytest.raises(IndexError):
@@ -238,11 +249,44 @@ def test_invoke_increments_visit_count_even_when_no_conditions(step_dir, monkeyp
         picture=step_dir / "picture.png",
         complete_conditions=[],
         next_step_names=[],
+        script_count=SCRIPT_COUNT,
     )
 
     step.invoke("입력")
 
     assert step.visit_count == 2
+
+
+def test_invoke_clamps_visit_count_to_script_count_on_self_loop(
+    step_dir,
+    monkeypatch,
+):
+    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
+
+    step = Step(
+        name="self-loop",
+        scene="...",
+        character="Zephyr_smile",
+        step_dir=step_dir,
+        picture=step_dir / "picture.png",
+        complete_conditions=[],
+        next_step_names=[],
+        script_count=2,
+    )
+
+    step.invoke("1번째")
+    assert step.visit_count == 2
+    output_at_2 = step.get_output()
+
+    step.invoke("2번째 — 스크립트 한계 초과")
+    assert step.visit_count == 2
+    output_at_3 = step.get_output()
+
+    step.invoke("3번째 — 계속 한계 유지")
+    assert step.visit_count == 2
+
+    assert output_at_2.script == step_dir / "script" / "2.txt"
+    assert output_at_3.script == step_dir / "script" / "2.txt"
 
 
 def test_is_terminal_true_when_no_next_step_names(step_dir):
@@ -254,6 +298,7 @@ def test_is_terminal_true_when_no_next_step_names(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=[],
         next_step_names=[],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.is_terminal is True
@@ -268,6 +313,7 @@ def test_is_terminal_false_when_has_next_step_names(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=[""],
         next_step_names=["next"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.is_terminal is False
@@ -282,6 +328,7 @@ def test_is_auto_advance_true_when_no_conditions_and_single_next(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=[""],
         next_step_names=["next"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.is_auto_advance is True
@@ -296,6 +343,7 @@ def test_is_auto_advance_false_when_terminal(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=[],
         next_step_names=[],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.is_auto_advance is False
@@ -310,6 +358,7 @@ def test_is_auto_advance_false_when_has_conditions(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=["주문"],
         next_step_names=["next"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.is_auto_advance is False
@@ -324,6 +373,7 @@ def test_is_auto_advance_false_when_multiple_next_steps(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=["", ""],
         next_step_names=["a", "b"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.is_auto_advance is False
@@ -338,6 +388,7 @@ def test_conditions_extracts_non_empty_conditions(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문", "메뉴 질문"],
         next_step_names=["2. 결제", "1. 안내"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.conditions == ["메뉴 주문", "메뉴 질문"]
@@ -352,6 +403,7 @@ def test_conditions_excludes_empty_string_conditions(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=[""],
         next_step_names=["next"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.conditions == []
@@ -366,6 +418,7 @@ def test_next_step_names_lists_all_targets(step_dir):
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문", ""],
         next_step_names=["2. 결제", "1. 안내"],
+        script_count=SCRIPT_COUNT,
     )
 
     assert step.next_step_names == ["2. 결제", "1. 안내"]
@@ -413,6 +466,7 @@ def test_invoke_redirects_to_overflow_at_threshold_without_calling_llm(
         picture=step_dir / "picture.png",
         complete_conditions=["탈출", "계속"],
         next_step_names=["escape", "loop"],
+        script_count=SCRIPT_COUNT,
         visit_overflow=VisitOverflow(after=3, next_step="redirect"),
     )
     step.visit_count = 3
@@ -433,6 +487,7 @@ def test_invoke_overflow_above_threshold_still_skips_llm(step_dir, monkeypatch):
         picture=step_dir / "picture.png",
         complete_conditions=["탈출", "계속"],
         next_step_names=["escape", "loop"],
+        script_count=SCRIPT_COUNT,
         visit_overflow=VisitOverflow(after=3, next_step="redirect"),
     )
     step.visit_count = 100
@@ -454,6 +509,7 @@ def test_invoke_does_not_apply_overflow_below_threshold(step_dir, monkeypatch):
         picture=step_dir / "picture.png",
         complete_conditions=["탈출", "계속"],
         next_step_names=["escape", "loop"],
+        script_count=SCRIPT_COUNT,
         visit_overflow=VisitOverflow(after=3, next_step="redirect"),
     )
     step.visit_count = 2

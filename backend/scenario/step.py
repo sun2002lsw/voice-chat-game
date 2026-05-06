@@ -15,6 +15,7 @@ class Step:
         picture: Path,
         complete_conditions: list[str],
         next_step_names: list[str],
+        script_count: int,
         visit_overflow: VisitOverflow | None = None,
     ) -> None:
         self.name = name
@@ -24,6 +25,7 @@ class Step:
         self.picture = picture
         self.complete_conditions = complete_conditions
         self.next_step_names = next_step_names
+        self.script_count = script_count
         self.visit_overflow = visit_overflow
         self.visit_count = 1
 
@@ -45,7 +47,7 @@ class Step:
 
     def invoke(self, user_input: str) -> tuple[str, int | None]:
         next_step_name, llm_index = self._decide_next_step(user_input)
-        self.visit_count += 1
+        self.visit_count = min(self.visit_count + 1, self.script_count)
 
         return next_step_name, llm_index
 

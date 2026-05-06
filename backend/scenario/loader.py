@@ -109,6 +109,7 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
         picture=picture_path,
         complete_conditions=complete_conditions,
         next_step_names=next_step_names,
+        script_count=script_count,
         visit_overflow=visit_overflow,
     )
 
