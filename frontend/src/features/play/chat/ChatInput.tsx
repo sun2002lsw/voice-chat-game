@@ -19,7 +19,7 @@ export function ChatInput({ onSubmit, disabled, submitDisabled }: Props) {
   }, []);
 
   const { isSupported: micSupported, isListening, start, stop } =
-    useSpeechRecognition({ onFinalText: handleFinalText, autoStart: true });
+    useSpeechRecognition({ onFinalText: handleFinalText });
 
   const onSubmitRef = useRef(onSubmit);
   useEffect(() => {

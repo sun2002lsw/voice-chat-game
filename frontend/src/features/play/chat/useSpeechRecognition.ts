@@ -60,6 +60,7 @@ export function useSpeechRecognition({
   const userActiveRef = useRef(false);
   const errorBlockedRef = useRef(false);
   const startRef = useRef<() => void>(() => {});
+  const startedAtRef = useRef<number>(0);
   const [isListening, setIsListening] = useState(false);
   const [isSupported] = useState(() => getCtor() !== undefined);
 
@@ -104,6 +105,11 @@ export function useSpeechRecognition({
       recognition.onend = () => {
         recognitionRef.current = null;
         if (userActiveRef.current && !errorBlockedRef.current) {
+          // Chrome이 1초 안에 끝낸 경우: user gesture 없이는 시작 불가한 상태 → 루프 방지
+          if (Date.now() - startedAtRef.current < 1000) {
+            setIsListening(false);
+            return;
+          }
           window.setTimeout(() => {
             if (
               userActiveRef.current &&
@@ -112,13 +118,14 @@ export function useSpeechRecognition({
             ) {
               startRef.current();
             }
-          }, 200);
+          }, 500);
         } else {
           setIsListening(false);
         }
       };
 
       recognitionRef.current = recognition;
+      startedAtRef.current = Date.now();
       try {
         recognition.start();
         setIsListening(true);
