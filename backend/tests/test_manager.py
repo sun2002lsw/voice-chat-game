@@ -335,24 +335,11 @@ def test_init_skips_non_directory_entries_in_root(scenarios_root, monkeypatch):
 def test_loaded_scenario_invokes_through_to_real_step_transition(
     scenarios_root, monkeypatch
 ):
-    class _FakeLLMPicksFirst:
-        def __init__(self) -> None:
-            pass
-
-        def get_next_step(
-            self,
-            scene: str,
-            complete_conditions: list[str],
-            user_input: str,
-        ) -> int:
-            return 0
-
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLMPicksFirst)
 
     scenario = ScenarioManager().get("test_cafe")
     assert scenario.current_step.name == "1. 인사"
 
-    scenario.invoke("주문할게요")
+    scenario.invoke(0)
 
     assert scenario.current_step.name == "2. 결제"

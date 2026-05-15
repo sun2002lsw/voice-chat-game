@@ -71,9 +71,9 @@ describe("submitInput", () => {
       }),
     );
 
-    const result = await submitInput("test_cafe", "안녕하세요");
+    const result = await submitInput("test_cafe", 1);
 
-    expect(receivedBody).toEqual({ text: "안녕하세요" });
+    expect(receivedBody).toEqual({ index: 1 });
     expect(result).toEqual(sampleState);
   });
 });

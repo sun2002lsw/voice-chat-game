@@ -119,9 +119,12 @@ export function Play() {
     if (name === undefined) return;
     if (pendingUserText !== null) return;
 
+    const index = parseInt(text, 10);
+    if (isNaN(index)) return;
+
     setPendingUserText(text);
     try {
-      const newState = await submitInput(name, text);
+      const newState = await submitInput(name, index);
       setState(newState);
       setAudioKey((k) => k + 1);
     } catch {

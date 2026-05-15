@@ -26,9 +26,9 @@ export async function fetchState(name: string): Promise<SessionState> {
 
 export async function submitInput(
   name: string,
-  text: string,
+  index: number,
 ): Promise<SessionState> {
-  return postJson<SessionState>(scenarioPath(name, "/input"), { text });
+  return postJson<SessionState>(scenarioPath(name, "/input"), { index });
 }
 
 async function getJson<T>(path: string): Promise<T> {

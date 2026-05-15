@@ -61,7 +61,7 @@ def submit_input(
     session = _get_session(request)
     _require_state(session, name)
 
-    state = session.submit_input(name, body.text)
+    state = session.submit_input(name, body.index)
     return to_session_state_dto(state)
 
 

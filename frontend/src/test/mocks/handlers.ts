@@ -30,8 +30,7 @@ export const sampleState: SessionState = {
       conditions: ["주문"],
       next_step_names: ["2. 결제"],
       character_script: "어서오세요",
-      user_input: "",
-      llm_index: null,
+      selected_index: null,
     },
   ],
 };

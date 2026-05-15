@@ -25,11 +25,11 @@ class Scenario:
     def is_terminal(self) -> bool:
         return self.current_step.is_terminal
 
-    def invoke(self, user_input: str) -> int | None:
-        next_step_name, llm_index = self.current_step.invoke(user_input)
+    def invoke(self, index: int) -> int:
+        next_step_name, selected = self.current_step.invoke(index)
         self.current_step = self._steps_by_name[next_step_name]
 
-        return llm_index
+        return selected
 
     def get_output(self) -> StepOutput:
         return self.current_step.get_output()

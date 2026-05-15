@@ -89,7 +89,7 @@ describe("Play", () => {
     renderPlay("test_cafe");
 
     await screen.findAllByText("어서오세요");
-    await user.type(screen.getByRole("textbox"), "주문할게요{Enter}");
+    await user.type(screen.getByRole("textbox"), "0{Enter}");
 
     const updated = await screen.findAllByText("결제 도와드릴게요");
     expect(updated.length).toBeGreaterThan(0);
@@ -137,7 +137,7 @@ describe("Play", () => {
     renderPlay("test_cafe");
 
     await screen.findAllByText("어서오세요");
-    await user.type(screen.getByRole("textbox"), "주문할게요{Enter}");
+    await user.type(screen.getByRole("textbox"), "0{Enter}");
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("전송에 실패했습니다.");

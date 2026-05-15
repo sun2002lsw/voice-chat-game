@@ -30,21 +30,6 @@ def _make_step_dir(
     (step_dir / "voice" / "1.wav").write_bytes(b"RIFF....WAVEfmt ")
 
 
-class _FakeLLM:
-    next_index: int = 0
-
-    def __init__(self) -> None:
-        pass
-
-    def get_next_step(
-        self,
-        scene: str,
-        complete_conditions: list[str],
-        user_input: str,
-    ) -> int:
-        return _FakeLLM.next_index
-
-
 @pytest.fixture
 def scenarios_root(tmp_path: Path) -> Path:
     root = tmp_path / "scenarios"
@@ -80,10 +65,8 @@ def scenarios_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def reset_singletons_and_llm(monkeypatch):
+def reset_singletons(monkeypatch):
     Singleton._instances.pop(ScenarioManager, None)
-    _FakeLLM.next_index = 0
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
     yield
     Singleton._instances.pop(ScenarioManager, None)
 
@@ -144,8 +127,7 @@ def test_post_new_returns_initial_state(client: TestClient):
     assert first_entry["conditions"] == ["주문"]
     assert first_entry["next_step_names"] == ["2. 결제"]
     assert first_entry["character_script"] == "어서오세요"
-    assert first_entry["user_input"] == ""
-    assert first_entry["llm_index"] is None
+    assert first_entry["selected_index"] is None
 
 
 def test_get_state_returns_404_when_no_progress(client: TestClient):
@@ -167,7 +149,7 @@ def test_post_input_advances_to_next_step_and_appends_logs(client: TestClient):
 
     response = client.post(
         "/api/scenarios/test_cafe/input",
-        json={"text": "주문할게요"},
+        json={"index": 0},
     )
 
     assert response.status_code == 200
@@ -178,20 +160,18 @@ def test_post_input_advances_to_next_step_and_appends_logs(client: TestClient):
 
     completed = body["state_log"][0]
     assert completed["step_name"] == "1. 인사"
-    assert completed["user_input"] == "주문할게요"
-    assert completed["llm_index"] == 0
+    assert completed["selected_index"] == 0
 
     started = body["state_log"][1]
     assert started["step_name"] == "2. 결제"
-    assert started["user_input"] == ""
-    assert started["llm_index"] is None
+    assert started["selected_index"] is None
     assert started["character_script"] == "결제 도와드릴게요"
 
 
 def test_post_input_returns_404_when_no_progress(client: TestClient):
     response = client.post(
         "/api/scenarios/test_cafe/input",
-        json={"text": "hi"},
+        json={"index": 0},
     )
     assert response.status_code == 404
 
@@ -225,7 +205,7 @@ def test_get_voice_returns_404_when_no_progress(client: TestClient):
     assert response.status_code == 404
 
 
-def test_post_input_returns_422_when_text_field_missing(client: TestClient):
+def test_post_input_returns_422_when_index_field_missing(client: TestClient):
     client.post("/api/scenarios/test_cafe/new")
 
     response = client.post("/api/scenarios/test_cafe/input", json={})
@@ -248,7 +228,7 @@ def test_get_picture_reflects_current_step_after_transition(
     client.post("/api/scenarios/test_cafe/new")
     client.post(
         "/api/scenarios/test_cafe/input",
-        json={"text": "주문할게요"},
+        json={"index": 0},
     )
 
     response = client.get("/api/scenarios/test_cafe/picture")
@@ -262,7 +242,7 @@ def test_post_input_marks_is_terminal_true_at_terminal_step(client: TestClient):
 
     response = client.post(
         "/api/scenarios/test_cafe/input",
-        json={"text": "주문할게요"},
+        json={"index": 0},
     )
 
     assert response.status_code == 200

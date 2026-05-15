@@ -72,26 +72,9 @@ def scenarios_root(tmp_path: Path) -> Path:
     return root
 
 
-class _FakeLLM:
-    next_index: int = 0
-
-    def __init__(self) -> None:
-        pass
-
-    def get_next_step(
-        self,
-        scene: str,
-        complete_conditions: list[str],
-        user_input: str,
-    ) -> int:
-        return _FakeLLM.next_index
-
-
 @pytest.fixture(autouse=True)
-def reset_singletons_and_llm(monkeypatch):
+def reset_singletons(monkeypatch):
     Singleton._instances.pop(ScenarioManager, None)
-    _FakeLLM.next_index = 0
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
     yield
     Singleton._instances.pop(ScenarioManager, None)
 
@@ -136,14 +119,12 @@ def test_start_new_records_first_dialog_and_state_log_entry(
     assert first.conditions == ["주문"]
     assert first.next_step_names == ["2. 결제"]
     assert first.character_script == "어서오세요"
-    assert first.user_input == ""
-    assert first.llm_index is None
+    assert first.selected_index is None
 
 
 def test_start_new_clears_existing_progress(game_session: GameSession):
-    _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
-    game_session.submit_input("test_cafe", "주문할게요")
+    game_session.submit_input("test_cafe", 0)
 
     state = game_session.start_new("test_cafe")
 
@@ -155,22 +136,20 @@ def test_start_new_clears_existing_progress(game_session: GameSession):
 def test_submit_input_appends_user_and_character_dialogs(
     game_session: GameSession,
 ):
-    _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
 
-    state = game_session.submit_input("test_cafe", "주문할게요")
+    state = game_session.submit_input("test_cafe", 0)
 
     roles = [d.role for d in state.dialog]
     assert roles == ["character", "user", "character"]
-    assert state.dialog[1].text == "주문할게요"
+    assert state.dialog[1].text == "0"
     assert state.dialog[2].text == "결제 도와드릴게요"
 
 
 def test_submit_input_transitions_to_next_step(game_session: GameSession):
-    _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
 
-    state = game_session.submit_input("test_cafe", "주문할게요")
+    state = game_session.submit_input("test_cafe", 0)
 
     assert state.current_step_name == "2. 결제"
 
@@ -178,10 +157,9 @@ def test_submit_input_transitions_to_next_step(game_session: GameSession):
 def test_submit_input_completes_first_entry_and_starts_next(
     game_session: GameSession,
 ):
-    _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
 
-    state = game_session.submit_input("test_cafe", "아메리카노")
+    state = game_session.submit_input("test_cafe", 0)
 
     assert len(state.state_log) == 2
 
@@ -191,8 +169,7 @@ def test_submit_input_completes_first_entry_and_starts_next(
     assert completed.conditions == ["주문"]
     assert completed.next_step_names == ["2. 결제"]
     assert completed.character_script == "어서오세요"
-    assert completed.user_input == "아메리카노"
-    assert completed.llm_index == 0
+    assert completed.selected_index == 0
 
     started = state.state_log[1]
     assert started.step_name == "2. 결제"
@@ -200,22 +177,20 @@ def test_submit_input_completes_first_entry_and_starts_next(
     assert started.conditions == []
     assert started.next_step_names == []
     assert started.character_script == "결제 도와드릴게요"
-    assert started.user_input == ""
-    assert started.llm_index is None
+    assert started.selected_index is None
 
 
 def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
     game_session: GameSession,
 ):
-    _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
-    game_session.submit_input("test_cafe", "주문")
+    game_session.submit_input("test_cafe", 0)
 
-    state = game_session.submit_input("test_cafe", "한 번 더")
+    state = game_session.submit_input("test_cafe", 0)
 
     assert len(state.dialog) == 5
     assert state.dialog[-2].role == "user"
-    assert state.dialog[-2].text == "한 번 더"
+    assert state.dialog[-2].text == "0"
     assert state.dialog[-1].role == "character"
     assert state.dialog[-1].text == "결제 두 번째 안내"
     assert state.current_step_name == "2. 결제"
@@ -247,10 +222,9 @@ def test_start_new_marks_is_terminal_false_for_non_terminal_step(
 def test_submit_input_marks_is_terminal_true_at_terminal_step(
     game_session: GameSession,
 ):
-    _FakeLLM.next_index = 0
     game_session.start_new("test_cafe")
 
-    state = game_session.submit_input("test_cafe", "주문할게요")
+    state = game_session.submit_input("test_cafe", 0)
 
     assert state.current_step_name == "2. 결제"
     assert state.is_terminal is True

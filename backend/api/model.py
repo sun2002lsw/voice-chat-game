@@ -22,8 +22,7 @@ class StateLogEntryDTO(BaseModel):
     conditions: list[str]
     next_step_names: list[str]
     character_script: str
-    user_input: str
-    llm_index: int | None
+    selected_index: int | None
 
 
 class SessionStateDTO(BaseModel):
@@ -39,7 +38,7 @@ class SessionStateDTO(BaseModel):
 
 
 class InputRequest(BaseModel):
-    text: str
+    index: int
 
 
 def to_session_state_dto(state: SessionState) -> SessionStateDTO:
@@ -60,8 +59,7 @@ def to_session_state_dto(state: SessionState) -> SessionStateDTO:
             conditions=entry.conditions,
             next_step_names=entry.next_step_names,
             character_script=entry.character_script,
-            user_input=entry.user_input,
-            llm_index=entry.llm_index,
+            selected_index=entry.selected_index,
         )
         for entry in state.state_log
     ]

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from llm import LLM
-
 from .common import StepOutput, VisitOverflow
 
 
@@ -37,11 +35,24 @@ class Step:
     def conditions(self) -> list[str]:
         return [c for c in self.complete_conditions if c]
 
-    def invoke(self, user_input: str) -> tuple[str, int | None]:
-        next_step_name, llm_index = self._decide_next_step(user_input)
-        self.visit_count = min(self.visit_count + 1, self.script_count)
+    def invoke(self, index: int) -> tuple[str, int]:
+        names = self.next_step_names
+        if names:
+            last = len(names) - 1
+            selected = index if 0 <= index <= last else last
+        else:
+            selected = 0
 
-        return next_step_name, llm_index
+        overflow_target = self._visit_overflow_target()
+        if overflow_target is not None:
+            next_step_name = overflow_target
+        elif names:
+            next_step_name = names[selected]
+        else:
+            next_step_name = self.name
+
+        self.visit_count = min(self.visit_count + 1, self.script_count)
+        return next_step_name, selected
 
     def get_output(self) -> StepOutput:
         return StepOutput(
@@ -49,33 +60,6 @@ class Step:
             script=self.step_dir / "script" / f"{self.visit_count}.txt",
             voice=self.step_dir / "voice" / f"{self.visit_count}.wav",
         )
-
-    def _decide_next_step(self, user_input: str) -> tuple[str, int | None]:
-        overflow_target = self._visit_overflow_target()
-        if overflow_target is not None:
-            return overflow_target, None
-
-        has_conditions = any(self.complete_conditions)
-        if not has_conditions:
-            return self._next_step_without_conditions(), None
-
-        return self._pick_next_step_via_llm(user_input)
-
-    def _next_step_without_conditions(self) -> str:
-        if not self.next_step_names:
-            return self.name
-
-        return self.next_step_names[0]
-
-    def _pick_next_step_via_llm(self, user_input: str) -> tuple[str, int]:
-        next_step_index = LLM().get_next_step(
-            scene=self.scene,
-            complete_conditions=self.complete_conditions,
-            user_input=user_input,
-        )
-        next_step_name = self.next_step_names[next_step_index]
-
-        return next_step_name, next_step_index
 
     def _visit_overflow_target(self) -> str | None:
         if self.visit_overflow is None:

@@ -11,14 +11,12 @@ const startEntry: StateLogEntry = {
   conditions: ["주문", "메뉴 질문"],
   next_step_names: ["2. 결제", "1. 안내"],
   character_script: "어서오세요",
-  user_input: "",
-  llm_index: null,
+  selected_index: null,
 };
 
 const completedEntry: StateLogEntry = {
   ...startEntry,
-  user_input: "주문할게요",
-  llm_index: 0,
+  selected_index: 0,
 };
 
 describe("DebugPanel", () => {
@@ -48,16 +46,15 @@ describe("DebugPanel", () => {
     expect(block).toHaveTextContent("어서오세요");
   });
 
-  it("shows user input and llm_index when filled", () => {
+  it("shows selected_index when filled", () => {
     render(<DebugPanel stateLog={[completedEntry]} />);
 
     const block = screen.getByTestId("debug-block");
-    expect(block).toHaveTextContent("주문할게요");
-    expect(block).toHaveTextContent("LLM 인덱스");
+    expect(block).toHaveTextContent("선택 인덱스");
     expect(block).toHaveTextContent("0");
   });
 
-  it("indicates pending state when user_input is empty", () => {
+  it("indicates pending state when selected_index is null", () => {
     render(<DebugPanel stateLog={[startEntry]} />);
 
     const block = screen.getByTestId("debug-block");

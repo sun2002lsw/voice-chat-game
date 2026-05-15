@@ -15,8 +15,7 @@ export type StateLogEntry = {
   conditions: string[];
   next_step_names: string[];
   character_script: string;
-  user_input: string;
-  llm_index: number | null;
+  selected_index: number | null;
 };
 
 export type SessionState = {

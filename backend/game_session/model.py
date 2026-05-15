@@ -17,8 +17,7 @@ class StateLogEntry:
     conditions: list[str]
     next_step_names: list[str]
     character_script: str
-    user_input: str
-    llm_index: int | None
+    selected_index: int | None
 
 
 @dataclass(frozen=True)

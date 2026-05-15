@@ -21,42 +21,6 @@ def step_dir(tmp_path: Path) -> Path:
     return d
 
 
-class _FakeLLM:
-    next_index: int = 0
-    last_call_args: dict | None = None
-
-    def __init__(self) -> None:
-        pass
-
-    def get_next_step(
-        self,
-        scene: str,
-        complete_conditions: list[str],
-        user_input: str,
-    ) -> int:
-        _FakeLLM.last_call_args = {
-            "scene": scene,
-            "complete_conditions": complete_conditions,
-            "user_input": user_input,
-        }
-        return _FakeLLM.next_index
-
-
-class _RaisingLLM:
-    def __init__(self) -> None:
-        pass
-
-    def get_next_step(self, *args, **kwargs) -> int:
-        msg = "LLM should not be called when complete_conditions is empty"
-        raise AssertionError(msg)
-
-
-@pytest.fixture(autouse=True)
-def reset_fake_llm_state():
-    _FakeLLM.next_index = 0
-    _FakeLLM.last_call_args = None
-
-
 def test_get_output_returns_paths_for_first_visit(step_dir):
     step = Step(
         name="1. greeting",
@@ -76,9 +40,7 @@ def test_get_output_returns_paths_for_first_visit(step_dir):
     assert output.voice == step_dir / "voice" / "1.wav"
 
 
-def test_get_output_reflects_visit_count_after_invoke(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_get_output_reflects_visit_count_after_invoke(step_dir):
     step = Step(
         name="self-loop",
         scene="...",
@@ -90,10 +52,10 @@ def test_get_output_reflects_visit_count_after_invoke(step_dir, monkeypatch):
         script_count=SCRIPT_COUNT,
     )
 
-    step.invoke("입력")
+    step.invoke(0)
     output_after_first_invoke = step.get_output()
 
-    step.invoke("입력")
+    step.invoke(0)
     output_after_second_invoke = step.get_output()
 
     assert output_after_first_invoke.script == step_dir / "script" / "2.txt"
@@ -103,21 +65,13 @@ def test_get_output_reflects_visit_count_after_invoke(step_dir, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("llm_index", "expected_next_step"),
+    ("index", "expected_next_step"),
     [
         (0, "2. 결제"),
         (1, "1. 어서오세요-안내"),
     ],
 )
-def test_invoke_returns_step_name_and_llm_index_tuple(
-    step_dir,
-    monkeypatch,
-    llm_index,
-    expected_next_step,
-):
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
-    _FakeLLM.next_index = llm_index
-
+def test_invoke_uses_index_to_select_next_step(step_dir, index, expected_next_step):
     step = Step(
         name="1. 어서오세요",
         scene="카페 직원으로서 인사한다",
@@ -129,59 +83,46 @@ def test_invoke_returns_step_name_and_llm_index_tuple(
         script_count=SCRIPT_COUNT,
     )
 
-    result = step.invoke("아메리카노 주세요")
+    result = step.invoke(index)
 
-    assert result == (expected_next_step, llm_index)
+    assert result == (expected_next_step, index)
 
 
-def test_invoke_passes_scene_conditions_and_user_input_to_llm(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
-
+def test_invoke_clamps_out_of_range_index_to_last(step_dir):
     step = Step(
         name="1. 어서오세요",
-        scene="카페 직원으로서 인사한다",
+        scene="...",
         character="Zephyr_smile",
         step_dir=step_dir,
         picture=step_dir / "picture.png",
         complete_conditions=["메뉴 주문", "메뉴 질문"],
-        next_step_names=["2. 결제", "1. 어서오세요-안내"],
+        next_step_names=["2. 결제", "1. 안내"],
         script_count=SCRIPT_COUNT,
     )
 
-    step.invoke("아메리카노 주세요")
+    result = step.invoke(99)
 
-    assert _FakeLLM.last_call_args == {
-        "scene": "카페 직원으로서 인사한다",
-        "complete_conditions": ["메뉴 주문", "메뉴 질문"],
-        "user_input": "아메리카노 주세요",
-    }
+    assert result == ("1. 안내", 1)
 
 
-def test_invoke_skips_llm_when_complete_conditions_empty(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_invoke_clamps_negative_index_to_last(step_dir):
     step = Step(
-        name="1. 어서오세요-안내",
-        scene="안내한다",
+        name="step",
+        scene="...",
         character="Zephyr_smile",
         step_dir=step_dir,
         picture=step_dir / "picture.png",
-        complete_conditions=[""],
-        next_step_names=["1. 어서오세요"],
+        complete_conditions=["a", "b"],
+        next_step_names=["next_a", "next_b"],
         script_count=SCRIPT_COUNT,
     )
 
-    result = step.invoke("아무 입력")
+    result = step.invoke(-1)
 
-    assert result == ("1. 어서오세요", None)
+    assert result == ("next_b", 1)
 
 
-def test_invoke_returns_self_name_when_no_conditions_and_no_next_steps(
-    step_dir,
-    monkeypatch,
-):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_invoke_returns_self_name_when_terminal(step_dir):
     step = Step(
         name="2. 결제",
         scene="결제 요청",
@@ -193,14 +134,12 @@ def test_invoke_returns_self_name_when_no_conditions_and_no_next_steps(
         script_count=SCRIPT_COUNT,
     )
 
-    result = step.invoke("아무 입력")
+    result = step.invoke(0)
 
-    assert result == ("2. 결제", None)
+    assert result == ("2. 결제", 0)
 
 
-def test_invoke_increments_visit_count_on_each_call(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
-
+def test_invoke_increments_visit_count_on_each_call(step_dir):
     step = Step(
         name="1. 어서오세요",
         scene="...",
@@ -213,34 +152,13 @@ def test_invoke_increments_visit_count_on_each_call(step_dir, monkeypatch):
     )
 
     assert step.visit_count == 1
-    step.invoke("입력 1")
+    step.invoke(0)
     assert step.visit_count == 2
-    step.invoke("입력 2")
+    step.invoke(0)
     assert step.visit_count == 3
 
 
-def test_invoke_raises_when_llm_returns_out_of_range_index(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
-    _FakeLLM.next_index = 99
-
-    step = Step(
-        name="1. 어서오세요",
-        scene="...",
-        character="Zephyr_smile",
-        step_dir=step_dir,
-        picture=step_dir / "picture.png",
-        complete_conditions=["메뉴 주문", "메뉴 질문"],
-        next_step_names=["2. 결제", "1. 안내"],
-        script_count=SCRIPT_COUNT,
-    )
-
-    with pytest.raises(IndexError):
-        step.invoke("입력")
-
-
-def test_invoke_increments_visit_count_even_when_no_conditions(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_invoke_increments_visit_count_even_when_terminal(step_dir):
     step = Step(
         name="self-loop",
         scene="...",
@@ -252,17 +170,12 @@ def test_invoke_increments_visit_count_even_when_no_conditions(step_dir, monkeyp
         script_count=SCRIPT_COUNT,
     )
 
-    step.invoke("입력")
+    step.invoke(0)
 
     assert step.visit_count == 2
 
 
-def test_invoke_clamps_visit_count_to_script_count_on_self_loop(
-    step_dir,
-    monkeypatch,
-):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_invoke_clamps_visit_count_to_script_count_on_self_loop(step_dir):
     step = Step(
         name="self-loop",
         scene="...",
@@ -274,15 +187,15 @@ def test_invoke_clamps_visit_count_to_script_count_on_self_loop(
         script_count=2,
     )
 
-    step.invoke("1번째")
+    step.invoke(0)
     assert step.visit_count == 2
     output_at_2 = step.get_output()
 
-    step.invoke("2번째 — 스크립트 한계 초과")
+    step.invoke(0)
     assert step.visit_count == 2
     output_at_3 = step.get_output()
 
-    step.invoke("3번째 — 계속 한계 유지")
+    step.invoke(0)
     assert step.visit_count == 2
 
     assert output_at_2.script == step_dir / "script" / "2.txt"
@@ -392,12 +305,7 @@ def test_find_image_raises_when_no_image_in_folder(tmp_path):
         find_image(tmp_path, label="my_label")
 
 
-def test_invoke_redirects_to_overflow_at_threshold_without_calling_llm(
-    step_dir,
-    monkeypatch,
-):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_invoke_redirects_to_overflow_at_threshold(step_dir):
     step = Step(
         name="loop",
         scene="...",
@@ -411,14 +319,12 @@ def test_invoke_redirects_to_overflow_at_threshold_without_calling_llm(
     )
     step.visit_count = 3
 
-    result = step.invoke("아무 말")
+    result = step.invoke(0)
 
-    assert result == ("redirect", None)
+    assert result == ("redirect", 0)
 
 
-def test_invoke_overflow_above_threshold_still_skips_llm(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _RaisingLLM)
-
+def test_invoke_overflow_above_threshold(step_dir):
     step = Step(
         name="loop",
         scene="...",
@@ -432,15 +338,12 @@ def test_invoke_overflow_above_threshold_still_skips_llm(step_dir, monkeypatch):
     )
     step.visit_count = 100
 
-    result = step.invoke("아무 말")
+    result = step.invoke(0)
 
-    assert result == ("redirect", None)
+    assert result == ("redirect", 0)
 
 
-def test_invoke_does_not_apply_overflow_below_threshold(step_dir, monkeypatch):
-    monkeypatch.setattr("scenario.step.LLM", _FakeLLM)
-    _FakeLLM.next_index = 1
-
+def test_invoke_does_not_apply_overflow_below_threshold(step_dir):
     step = Step(
         name="loop",
         scene="...",
@@ -454,6 +357,6 @@ def test_invoke_does_not_apply_overflow_below_threshold(step_dir, monkeypatch):
     )
     step.visit_count = 2
 
-    result = step.invoke("계속 무시")
+    result = step.invoke(1)
 
     assert result == ("loop", 1)

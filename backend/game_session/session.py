@@ -50,12 +50,12 @@ class GameSession:
         scenario = self._manager.get(scenario_name)
         return self._build_session_state(scenario_name, scenario)
 
-    def submit_input(self, scenario_name: str, text: str) -> SessionState:
+    def submit_input(self, scenario_name: str, index: int) -> SessionState:
         scenario = self._manager.get(scenario_name)
-        llm_index = scenario.invoke(text)
+        selected_index = scenario.invoke(index)
 
         now = datetime.now(UTC)
-        user_dialog = DialogEntry(role="user", text=text, created_at=now)
+        user_dialog = DialogEntry(role="user", text=str(index), created_at=now)
 
         new_step = scenario.current_step
         new_character_script = scenario.get_output().script.read_text(encoding="utf-8")
@@ -65,9 +65,7 @@ class GameSession:
         new_state_entry = _state_entry_from_step(new_step, new_character_script)
 
         state_log = self._state_log[scenario_name]
-        state_log[-1] = dataclasses.replace(
-            state_log[-1], user_input=text, llm_index=llm_index,
-        )
+        state_log[-1] = dataclasses.replace(state_log[-1], selected_index=selected_index)
         self._dialog[scenario_name].extend([user_dialog, new_character_dialog])
         state_log.append(new_state_entry)
 
@@ -99,6 +97,5 @@ def _state_entry_from_step(step: Step, character_script: str) -> StateLogEntry:
         conditions=step.conditions,
         next_step_names=step.next_step_names,
         character_script=character_script,
-        user_input="",
-        llm_index=None,
+        selected_index=None,
     )
