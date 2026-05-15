@@ -7,7 +7,7 @@ class Step:
     def __init__(
         self,
         name: str,
-        scene: str,
+        tone: str,
         character: str,
         step_dir: Path,
         picture: Path,
@@ -16,7 +16,7 @@ class Step:
         script_count: int,
     ) -> None:
         self.name = name
-        self.scene = scene
+        self.tone = tone
         self.character = character
         self.step_dir = step_dir
         self.picture = picture

@@ -44,14 +44,14 @@ def scenarios_root(tmp_path: Path) -> Path:
         "steps": [
             {
                 "step": "1. 인사",
-                "scene": "직원이 인사한다",
+                "tone": "직원이 인사한다",
                 "character": "Zephyr",
                 "complete_conditions": ["주문"],
                 "next_steps": ["2. 결제"],
             },
             {
                 "step": "2. 결제",
-                "scene": "결제한다",
+                "tone": "결제한다",
                 "character": "Zephyr",
                 "complete_conditions": [],
                 "next_steps": [],

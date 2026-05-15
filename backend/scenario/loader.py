@@ -14,7 +14,7 @@ _IMAGE_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg"})
 _REQUIRED_GRAPH_KEYS = ("scenario", "steps")
 _REQUIRED_STEP_KEYS = (
     "step",
-    "scene",
+    "tone",
     "character",
     "complete_conditions",
     "next_steps",
@@ -96,7 +96,7 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
 
     return Step(
         name=step_name,
-        scene=entry["scene"],
+        tone=entry["tone"],
         character=entry["character"],
         step_dir=step_dir,
         picture=picture_path,

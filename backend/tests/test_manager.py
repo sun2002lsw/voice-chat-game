@@ -50,7 +50,7 @@ def _build_minimal_scenario(root: Path, scenario_name: str = "test") -> Path:
         "steps": [
             {
                 "step": "step1",
-                "scene": "...",
+                "tone": "...",
                 "character": "X",
                 "complete_conditions": [],
                 "next_steps": [],
@@ -77,14 +77,14 @@ def scenarios_root(tmp_path: Path) -> Path:
         "steps": [
             {
                 "step": "1. 인사",
-                "scene": "직원이 인사한다",
+                "tone": "직원이 인사한다",
                 "character": "Zephyr",
                 "complete_conditions": ["주문"],
                 "next_steps": ["2. 결제"],
             },
             {
                 "step": "2. 결제",
-                "scene": "결제한다",
+                "tone": "결제한다",
                 "character": "Zephyr",
                 "complete_conditions": [],
                 "next_steps": [],
@@ -114,7 +114,7 @@ def test_init_eagerly_loads_multiple_scenarios(scenarios_root, monkeypatch):
         "steps": [
             {
                 "step": "1. 시작",
-                "scene": "면접 시작",
+                "tone": "면접 시작",
                 "character": "Interviewer",
                 "complete_conditions": [],
                 "next_steps": [],
@@ -141,7 +141,7 @@ def test_init_raises_when_step_config_invalid(tmp_path, monkeypatch):
         "steps": [
             {
                 "step": "step1",
-                "scene": "...",
+                "tone": "...",
                 "character": "X",
                 "complete_conditions": [],
                 "next_steps": ["A", "B"],
@@ -170,7 +170,7 @@ def test_init_raises_when_conditions_and_next_steps_length_mismatch(
         "steps": [
             {
                 "step": "step1",
-                "scene": "...",
+                "tone": "...",
                 "character": "X",
                 "complete_conditions": ["c1", "c2"],
                 "next_steps": ["only_one"],
@@ -288,7 +288,7 @@ def test_get_constructs_first_step_from_yaml(scenarios_root, monkeypatch):
     first_step = scenario.first_step
     assert isinstance(first_step, Step)
     assert first_step.name == "1. 인사"
-    assert first_step.scene == "직원이 인사한다"
+    assert first_step.tone == "직원이 인사한다"
     assert first_step.character == "Zephyr"
     assert first_step.complete_conditions == ["주문"]
     assert first_step.next_step_names == ["2. 결제"]

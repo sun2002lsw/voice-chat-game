@@ -23,7 +23,7 @@ def step_dir(tmp_path: Path) -> Path:
 def _make_step(step_dir: Path, *, conditions: list, nexts: list, count: int = SCRIPT_COUNT) -> Step:
     return Step(
         name="step",
-        scene="...",
+        tone="...",
         character="Zephyr_smile",
         step_dir=step_dir,
         picture=step_dir / "picture.png",

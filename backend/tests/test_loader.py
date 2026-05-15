@@ -65,14 +65,14 @@ def _basic_graph(name: str) -> dict[str, Any]:
         "steps": [
             {
                 "step": "1. greet",
-                "scene": "인사",
+                "tone": "인사",
                 "character": "Zephyr_smile",
                 "complete_conditions": [],
                 "next_steps": ["2. ask"],
             },
             {
                 "step": "2. ask",
-                "scene": "묻기",
+                "tone": "묻기",
                 "character": "Zephyr_smile",
                 "complete_conditions": [],
                 "next_steps": [],
@@ -149,12 +149,12 @@ def test_load_scenario_raises_when_scenario_field_mismatches_dir(scenarios_root)
 
 def test_load_scenario_raises_when_step_entry_missing_required_key(scenarios_root):
     graph = _basic_graph("hello")
-    del graph["steps"][0]["scene"]
+    del graph["steps"][0]["tone"]
     _write_scenario(
         scenarios_root, name="hello", graph=graph, steps_setup=_basic_steps()
     )
 
-    with pytest.raises(ValueError, match="'scene' 키가 없습니다"):
+    with pytest.raises(ValueError, match="'tone' 키가 없습니다"):
         load_scenario("hello")
 
 
@@ -179,14 +179,14 @@ def test_load_scenario_raises_when_step_names_duplicate(scenarios_root):
         "steps": [
             {
                 "step": "1. greet",
-                "scene": "...",
+                "tone": "...",
                 "character": "Zephyr_smile",
                 "complete_conditions": [],
                 "next_steps": ["1. greet"],
             },
             {
                 "step": "1. greet",
-                "scene": "...",
+                "tone": "...",
                 "character": "Zephyr_smile",
                 "complete_conditions": [],
                 "next_steps": [],

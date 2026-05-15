@@ -8,7 +8,7 @@ from scenario.step import Step
 def _make_step(name: str, nexts: list[str] | None = None) -> Step:
     return Step(
         name=name,
-        scene="...",
+        tone="...",
         character="Zephyr_smile",
         step_dir=Path(name),
         picture=Path(f"{name}/picture.png"),
