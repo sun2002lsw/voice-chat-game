@@ -31,10 +31,6 @@ export async function submitInput(
   return postJson<SessionState>(scenarioPath(name, "/input"), { text });
 }
 
-export async function advance(name: string): Promise<SessionState> {
-  return postJson<SessionState>(scenarioPath(name, "/advance"));
-}
-
 async function getJson<T>(path: string): Promise<T> {
   const resp = await fetch(`${BASE}${path}`);
   if (!resp.ok) {

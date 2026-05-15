@@ -65,18 +65,6 @@ def submit_input(
     return to_session_state_dto(state)
 
 
-@router.post("/scenarios/{name}/advance")
-def advance(request: Request, name: str) -> SessionStateDTO:
-    session = _get_session(request)
-    _require_state(session, name)
-
-    try:
-        state = session.auto_advance(name)
-    except ValueError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return to_session_state_dto(state)
-
-
 @router.get("/scenarios/{name}/picture")
 def get_picture(request: Request, name: str) -> FileResponse:
     state = _require_state(_get_session(request), name)

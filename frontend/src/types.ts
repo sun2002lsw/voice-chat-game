@@ -24,7 +24,6 @@ export type SessionState = {
   current_step_name: string;
   current_visit_count: number;
   is_terminal: boolean;
-  is_auto_advance: boolean;
   profile_url: string;
   picture_url: string;
   voice_url: string;

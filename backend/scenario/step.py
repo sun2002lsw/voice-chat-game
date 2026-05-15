@@ -4,8 +4,6 @@ from llm import LLM
 
 from .common import StepOutput, VisitOverflow
 
-_ALWAYS = "always"
-
 
 class Step:
     def __init__(
@@ -36,14 +34,6 @@ class Step:
         return not self.next_step_names
 
     @property
-    def is_auto_advance(self) -> bool:
-        if self.is_terminal:
-            return False
-        if any(self.complete_conditions):
-            return False
-        return len(self.next_step_names) == 1
-
-    @property
     def conditions(self) -> list[str]:
         return [c for c in self.complete_conditions if c]
 
@@ -68,9 +58,6 @@ class Step:
         has_conditions = any(self.complete_conditions)
         if not has_conditions:
             return self._next_step_without_conditions(), None
-
-        if all(c == _ALWAYS for c in self.complete_conditions):
-            return self.next_step_names[0], None
 
         return self._pick_next_step_via_llm(user_input)
 

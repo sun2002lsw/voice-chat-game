@@ -7,7 +7,7 @@ type Props = {
   voiceUrl: string;
   stepKey: string;
   visitCount: number;
-  onEnded?: () => void;
+  audioKey: number;
 };
 
 function formatTime(seconds: number): string {
@@ -18,10 +18,10 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ voiceUrl, stepKey, visitCount, onEnded }: Props) {
+export function AudioPlayer({ voiceUrl, stepKey, visitCount, audioKey }: Props) {
   const src =
     `${voiceUrl}?step=${encodeURIComponent(stepKey)}&v=${visitCount}`;
-  const cacheKey = `${stepKey}#${visitCount}`;
+  const cacheKey = `${stepKey}#${visitCount}#${audioKey}`;
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -33,7 +33,7 @@ export function AudioPlayer({ voiceUrl, stepKey, visitCount, onEnded }: Props) {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [stepKey, visitCount]);
+  }, [stepKey, visitCount, audioKey]);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -71,10 +71,7 @@ export function AudioPlayer({ voiceUrl, stepKey, visitCount, onEnded }: Props) {
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        onEnded={() => {
-          setIsPlaying(false);
-          onEnded?.();
-        }}
+        onEnded={() => setIsPlaying(false)}
       />
       <button
         type="button"

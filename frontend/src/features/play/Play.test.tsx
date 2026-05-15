@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import {
@@ -121,66 +121,6 @@ describe("Play", () => {
     expect(alert).toHaveTextContent("진행 상태를 불러오지 못했습니다.");
     // LocationProbe renders only on path "/", so its absence confirms no redirect
     expect(screen.queryByTestId("location")).toBeNull();
-  });
-
-  it("auto-advances when audio ends and is_auto_advance is true", async () => {
-    const autoAdvanceState = { ...sampleState, is_auto_advance: true };
-    const advancedState = {
-      ...sampleState,
-      is_auto_advance: false,
-      current_step_name: "2. 안내",
-      dialog: [
-        ...sampleState.dialog,
-        {
-          role: "character" as const,
-          text: "안내드립니다",
-          created_at: "2026-05-03T14:01:00Z",
-        },
-      ],
-    };
-    let advanceCalled = false;
-    server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json(autoAdvanceState),
-      ),
-      http.post("/api/scenarios/:name/advance", () => {
-        advanceCalled = true;
-        return HttpResponse.json(advancedState);
-      }),
-    );
-
-    const { container } = renderPlay("test_cafe");
-
-    await screen.findAllByText("어서오세요");
-    const audio = container.querySelector("audio");
-    expect(audio).not.toBeNull();
-    fireEvent.ended(audio!);
-
-    await screen.findAllByText("안내드립니다");
-    expect(advanceCalled).toBe(true);
-  });
-
-  it("does not auto-advance when is_auto_advance is false", async () => {
-    let advanceCalled = false;
-    server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json(sampleState),
-      ),
-      http.post("/api/scenarios/:name/advance", () => {
-        advanceCalled = true;
-        return HttpResponse.json(sampleState);
-      }),
-    );
-
-    const { container } = renderPlay("test_cafe");
-
-    await screen.findAllByText("어서오세요");
-    const audio = container.querySelector("audio");
-    fireEvent.ended(audio!);
-
-    // give pending advance a chance to fire (it shouldn't)
-    await new Promise((r) => setTimeout(r, 50));
-    expect(advanceCalled).toBe(false);
   });
 
   it("shows an alert when submitInput fails", async () => {

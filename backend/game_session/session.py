@@ -73,35 +73,6 @@ class GameSession:
 
         return self._build_session_state(scenario_name, scenario)
 
-    def auto_advance(self, scenario_name: str) -> SessionState:
-        scenario = self._manager.get(scenario_name)
-
-        if not scenario.is_auto_advance:
-            msg = (
-                f"scenario '{scenario_name}' current step "
-                f"'{scenario.current_step_name}' is not auto-advance"
-            )
-            raise ValueError(msg)
-
-        llm_index = scenario.invoke("")
-
-        now = datetime.now(UTC)
-        new_step = scenario.current_step
-        new_character_script = scenario.get_output().script.read_text(encoding="utf-8")
-        new_character_dialog = DialogEntry(
-            role="character", text=new_character_script, created_at=now,
-        )
-        new_state_entry = _state_entry_from_step(new_step, new_character_script)
-
-        state_log = self._state_log[scenario_name]
-        state_log[-1] = dataclasses.replace(
-            state_log[-1], user_input="", llm_index=llm_index,
-        )
-        self._dialog[scenario_name].append(new_character_dialog)
-        state_log.append(new_state_entry)
-
-        return self._build_session_state(scenario_name, scenario)
-
     def _build_session_state(
         self,
         scenario_name: str,
@@ -113,7 +84,6 @@ class GameSession:
             current_step_name=scenario.current_step_name,
             current_visit_count=scenario.current_step.visit_count,
             is_terminal=scenario.is_terminal,
-            is_auto_advance=scenario.is_auto_advance,
             picture_path=output.picture,
             voice_path=output.voice,
             profile_path=scenario.picture,

@@ -319,66 +319,6 @@ def test_is_terminal_false_when_has_next_step_names(step_dir):
     assert step.is_terminal is False
 
 
-def test_is_auto_advance_true_when_no_conditions_and_single_next(step_dir):
-    step = Step(
-        name="step",
-        scene="...",
-        character="Zephyr_smile",
-        step_dir=step_dir,
-        picture=step_dir / "picture.png",
-        complete_conditions=[""],
-        next_step_names=["next"],
-        script_count=SCRIPT_COUNT,
-    )
-
-    assert step.is_auto_advance is True
-
-
-def test_is_auto_advance_false_when_terminal(step_dir):
-    step = Step(
-        name="end",
-        scene="...",
-        character="Zephyr_smile",
-        step_dir=step_dir,
-        picture=step_dir / "picture.png",
-        complete_conditions=[],
-        next_step_names=[],
-        script_count=SCRIPT_COUNT,
-    )
-
-    assert step.is_auto_advance is False
-
-
-def test_is_auto_advance_false_when_has_conditions(step_dir):
-    step = Step(
-        name="step",
-        scene="...",
-        character="Zephyr_smile",
-        step_dir=step_dir,
-        picture=step_dir / "picture.png",
-        complete_conditions=["주문"],
-        next_step_names=["next"],
-        script_count=SCRIPT_COUNT,
-    )
-
-    assert step.is_auto_advance is False
-
-
-def test_is_auto_advance_false_when_multiple_next_steps(step_dir):
-    step = Step(
-        name="step",
-        scene="...",
-        character="Zephyr_smile",
-        step_dir=step_dir,
-        picture=step_dir / "picture.png",
-        complete_conditions=["", ""],
-        next_step_names=["a", "b"],
-        script_count=SCRIPT_COUNT,
-    )
-
-    assert step.is_auto_advance is False
-
-
 def test_conditions_extracts_non_empty_conditions(step_dir):
     step = Step(
         name="step",

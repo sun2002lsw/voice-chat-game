@@ -1,5 +1,5 @@
-import { fireEvent, render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
 import { AudioPlayer } from "./AudioPlayer";
 
@@ -10,6 +10,7 @@ describe("AudioPlayer", () => {
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="1. 인사"
         visitCount={1}
+        audioKey={0}
       />,
     );
 
@@ -27,6 +28,7 @@ describe("AudioPlayer", () => {
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="step1"
         visitCount={1}
+        audioKey={0}
       />,
     );
 
@@ -39,6 +41,7 @@ describe("AudioPlayer", () => {
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="step1"
         visitCount={1}
+        audioKey={0}
       />,
     );
 
@@ -51,6 +54,7 @@ describe("AudioPlayer", () => {
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="step1"
         visitCount={1}
+        audioKey={0}
       />,
     );
 
@@ -59,6 +63,7 @@ describe("AudioPlayer", () => {
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="step2"
         visitCount={1}
+        audioKey={0}
       />,
     );
 
@@ -68,30 +73,13 @@ describe("AudioPlayer", () => {
     );
   });
 
-  it("invokes onEnded callback when audio playback finishes", () => {
-    const onEnded = vi.fn();
-    const { container } = render(
-      <AudioPlayer
-        voiceUrl="/api/scenarios/test_cafe/voice"
-        stepKey="step1"
-        visitCount={1}
-        onEnded={onEnded}
-      />,
-    );
-
-    const audio = container.querySelector("audio");
-    expect(audio).not.toBeNull();
-    fireEvent.ended(audio!);
-
-    expect(onEnded).toHaveBeenCalledTimes(1);
-  });
-
   it("updates src when visitCount changes (self-loop cache busting)", () => {
     const { container, rerender } = render(
       <AudioPlayer
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="step1"
         visitCount={1}
+        audioKey={0}
       />,
     );
 
@@ -100,6 +88,7 @@ describe("AudioPlayer", () => {
         voiceUrl="/api/scenarios/test_cafe/voice"
         stepKey="step1"
         visitCount={2}
+        audioKey={0}
       />,
     );
 
