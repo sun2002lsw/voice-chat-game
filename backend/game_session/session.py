@@ -18,12 +18,10 @@ class GameSession:
         self._manager = scenario_manager
 
     def list_scenarios(self) -> list[ScenarioSummary]:
-        progressed = set(self._datastore.list_progressed_scenarios())
         return [
             ScenarioSummary(
                 name=info.name,
                 picture_path=info.picture,
-                has_progress=info.name in progressed,
             )
             for info in self._manager.list_all()
         ]

@@ -8,7 +8,6 @@ from game_session.model import SessionState
 class ScenarioSummaryDTO(BaseModel):
     name: str
     profile_url: str
-    has_progress: bool
 
 
 class DialogEntryDTO(BaseModel):

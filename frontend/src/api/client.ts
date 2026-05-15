@@ -20,10 +20,6 @@ export async function startNew(name: string): Promise<SessionState> {
   return postJson<SessionState>(scenarioPath(name, "/new"));
 }
 
-export async function resumeSession(name: string): Promise<SessionState> {
-  return postJson<SessionState>(scenarioPath(name, "/continue"));
-}
-
 export async function fetchState(name: string): Promise<SessionState> {
   return getJson<SessionState>(scenarioPath(name, "/state"));
 }

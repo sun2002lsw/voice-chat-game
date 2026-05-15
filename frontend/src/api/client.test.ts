@@ -7,7 +7,6 @@ import { server } from "../test/mocks/server";
 import {
   fetchScenarios,
   fetchState,
-  resumeSession,
   startNew,
   submitInput,
 } from "./client";
@@ -41,24 +40,6 @@ describe("startNew", () => {
     expect(receivedPath).toBe(
       "/api/scenarios/%ED%9A%8C%EC%82%AC%20%EB%A9%B4%EC%A0%91/new",
     );
-  });
-});
-
-describe("resumeSession", () => {
-  it("returns SessionState from POST /api/scenarios/{name}/continue", async () => {
-    const result = await resumeSession("test_cafe");
-
-    expect(result).toEqual(sampleState);
-  });
-
-  it("throws when backend responds 404", async () => {
-    server.use(
-      http.post("/api/scenarios/:name/continue", () =>
-        HttpResponse.json({ detail: "not found" }, { status: 404 }),
-      ),
-    );
-
-    await expect(resumeSession("test_cafe")).rejects.toThrow();
   });
 });
 

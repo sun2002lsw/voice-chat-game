@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { fetchScenarios, resumeSession, startNew } from "../../api/client";
-import { NewOrContinueModal } from "./NewOrContinueModal";
+import { fetchScenarios, startNew } from "../../api/client";
 import { ScenarioCard } from "./ScenarioCard";
 import type { ScenarioSummary } from "../../types";
 
@@ -14,49 +13,27 @@ function playPath(name: string): string {
 
 export function Lobby() {
   const [scenarios, setScenarios] = useState<ScenarioSummary[]>([]);
-  const [selected, setSelected] = useState<ScenarioSummary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    const t = Date.now();
     fetchScenarios()
-      .then(setScenarios)
+      .then((data) =>
+        setScenarios(
+          data.map((s) => ({ ...s, profile_url: `${s.profile_url}?t=${t}` })),
+        ),
+      )
       .catch(() => setErrorMessage("시나리오 목록을 불러오지 못했습니다."));
   }, []);
 
-  async function enterScenario(
-    name: string,
-    enter: (name: string) => Promise<unknown>,
-    failureMessage: string,
-  ) {
-    try {
-      await enter(name);
-      navigate(playPath(name));
-    } catch {
-      setErrorMessage(failureMessage);
-    }
-  }
-
   async function handleCardClick(scenario: ScenarioSummary) {
-    if (scenario.has_progress) {
-      setSelected(scenario);
-      return;
+    try {
+      await startNew(scenario.name);
+      navigate(playPath(scenario.name));
+    } catch {
+      setErrorMessage("새 게임을 시작하지 못했습니다.");
     }
-    await enterScenario(scenario.name, startNew, "새 게임을 시작하지 못했습니다.");
-  }
-
-  async function handleNewGame() {
-    if (selected === null) return;
-    await enterScenario(selected.name, startNew, "새 게임을 시작하지 못했습니다.");
-  }
-
-  async function handleContinue() {
-    if (selected === null) return;
-    await enterScenario(selected.name, resumeSession, "이어하기에 실패했습니다.");
-  }
-
-  function handleClose() {
-    setSelected(null);
   }
 
   return (
@@ -83,14 +60,6 @@ export function Lobby() {
           />
         ))}
       </div>
-      {selected !== null && (
-        <NewOrContinueModal
-          scenarioName={selected.name}
-          onNewGame={handleNewGame}
-          onContinue={handleContinue}
-          onClose={handleClose}
-        />
-      )}
     </div>
   );
 }

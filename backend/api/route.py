@@ -12,6 +12,8 @@ from game_session.session import GameSession
 
 router = APIRouter()
 
+_NO_CACHE = {"Cache-Control": "no-store"}
+
 
 @router.get("/scenarios")
 def list_scenarios(request: Request) -> list[ScenarioSummaryDTO]:
@@ -20,7 +22,6 @@ def list_scenarios(request: Request) -> list[ScenarioSummaryDTO]:
         ScenarioSummaryDTO(
             name=s.name,
             profile_url=f"/api/scenarios/{s.name}/profile",
-            has_progress=s.has_progress,
         )
         for s in session.list_scenarios()
     ]
@@ -35,19 +36,13 @@ def get_profile(request: Request, name: str) -> FileResponse:
     if matched is None:
         raise HTTPException(status_code=404, detail="scenario not found")
 
-    return FileResponse(matched.picture_path)
+    return FileResponse(matched.picture_path, headers=_NO_CACHE)
 
 
 @router.post("/scenarios/{name}/new")
 def start_new(request: Request, name: str) -> SessionStateDTO:
     session = _get_session(request)
     state = session.start_new(name)
-    return to_session_state_dto(state)
-
-
-@router.post("/scenarios/{name}/continue")
-def resume(request: Request, name: str) -> SessionStateDTO:
-    state = _require_state(_get_session(request), name)
     return to_session_state_dto(state)
 
 
@@ -85,13 +80,13 @@ def advance(request: Request, name: str) -> SessionStateDTO:
 @router.get("/scenarios/{name}/picture")
 def get_picture(request: Request, name: str) -> FileResponse:
     state = _require_state(_get_session(request), name)
-    return FileResponse(state.picture_path)
+    return FileResponse(state.picture_path, headers=_NO_CACHE)
 
 
 @router.get("/scenarios/{name}/voice")
 def get_voice(request: Request, name: str) -> FileResponse:
     state = _require_state(_get_session(request), name)
-    return FileResponse(state.voice_path)
+    return FileResponse(state.voice_path, headers=_NO_CACHE)
 
 
 def _get_session(request: Request) -> GameSession:

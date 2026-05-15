@@ -32,14 +32,12 @@ function renderLobby() {
 
 const scenarios = [
   {
-    name: "no_progress_cafe",
-    profile_url: "/api/scenarios/no_progress_cafe/profile",
-    has_progress: false,
+    name: "cafe",
+    profile_url: "/api/scenarios/cafe/profile",
   },
   {
-    name: "with_progress_interview",
-    profile_url: "/api/scenarios/with_progress_interview/profile",
-    has_progress: true,
+    name: "interview",
+    profile_url: "/api/scenarios/interview/profile",
   },
 ];
 
@@ -54,11 +52,11 @@ describe("Lobby", () => {
     mockScenarios();
     renderLobby();
 
-    expect(await screen.findByText("no_progress_cafe")).toBeInTheDocument();
-    expect(screen.getByText("with_progress_interview")).toBeInTheDocument();
+    expect(await screen.findByText("cafe")).toBeInTheDocument();
+    expect(screen.getByText("interview")).toBeInTheDocument();
   });
 
-  it("clicking a card without progress starts a new game and navigates", async () => {
+  it("clicking a card starts a new game and navigates", async () => {
     mockScenarios();
     server.use(
       http.post("/api/scenarios/:name/new", () =>
@@ -68,84 +66,13 @@ describe("Lobby", () => {
 
     const user = userEvent.setup();
     renderLobby();
-    const card = await screen.findByRole("button", { name: /no_progress_cafe/ });
+    const card = await screen.findByRole("button", { name: /cafe/ });
 
     await user.click(card);
 
     await waitFor(() => {
-      expect(screen.getByTestId("location")).toHaveTextContent(
-        "/play/no_progress_cafe",
-      );
+      expect(screen.getByTestId("location")).toHaveTextContent("/play/cafe");
     });
-  });
-
-  it("clicking a card with progress opens the modal", async () => {
-    mockScenarios();
-    const user = userEvent.setup();
-    renderLobby();
-    const card = await screen.findByRole("button", {
-      name: /with_progress_interview/,
-    });
-
-    await user.click(card);
-
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-  });
-
-  it("modal '이어하기' resumes the session and navigates", async () => {
-    mockScenarios();
-    server.use(
-      http.post("/api/scenarios/:name/continue", () =>
-        HttpResponse.json(sampleState),
-      ),
-    );
-
-    const user = userEvent.setup();
-    renderLobby();
-    await user.click(
-      await screen.findByRole("button", { name: /with_progress_interview/ }),
-    );
-    await user.click(screen.getByRole("button", { name: "이어하기" }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("location")).toHaveTextContent(
-        "/play/with_progress_interview",
-      );
-    });
-  });
-
-  it("modal '새로하기' starts a new game and navigates", async () => {
-    mockScenarios();
-    server.use(
-      http.post("/api/scenarios/:name/new", () =>
-        HttpResponse.json(sampleState),
-      ),
-    );
-
-    const user = userEvent.setup();
-    renderLobby();
-    await user.click(
-      await screen.findByRole("button", { name: /with_progress_interview/ }),
-    );
-    await user.click(screen.getByRole("button", { name: "새로하기" }));
-
-    await waitFor(() => {
-      expect(screen.getByTestId("location")).toHaveTextContent(
-        "/play/with_progress_interview",
-      );
-    });
-  });
-
-  it("modal '닫기' closes the modal", async () => {
-    mockScenarios();
-    const user = userEvent.setup();
-    renderLobby();
-    await user.click(
-      await screen.findByRole("button", { name: /with_progress_interview/ }),
-    );
-    await user.click(screen.getByRole("button", { name: "닫기" }));
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("shows an alert when fetchScenarios fails with 5xx", async () => {
@@ -161,7 +88,7 @@ describe("Lobby", () => {
     expect(alert).toHaveTextContent("시나리오 목록을 불러오지 못했습니다.");
   });
 
-  it("shows an alert when startNew fails (card click without progress)", async () => {
+  it("shows an alert when startNew fails", async () => {
     mockScenarios();
     server.use(
       http.post("/api/scenarios/:name/new", () =>
@@ -171,30 +98,9 @@ describe("Lobby", () => {
 
     const user = userEvent.setup();
     renderLobby();
-    await user.click(
-      await screen.findByRole("button", { name: /no_progress_cafe/ }),
-    );
+    await user.click(await screen.findByRole("button", { name: /cafe/ }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("새 게임을 시작하지 못했습니다.");
-  });
-
-  it("shows an alert when resumeSession fails (modal 이어하기)", async () => {
-    mockScenarios();
-    server.use(
-      http.post("/api/scenarios/:name/continue", () =>
-        HttpResponse.json({ detail: "boom" }, { status: 500 }),
-      ),
-    );
-
-    const user = userEvent.setup();
-    renderLobby();
-    await user.click(
-      await screen.findByRole("button", { name: /with_progress_interview/ }),
-    );
-    await user.click(screen.getByRole("button", { name: "이어하기" }));
-
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("이어하기에 실패했습니다.");
   });
 });

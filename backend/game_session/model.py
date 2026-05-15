@@ -8,7 +8,6 @@ from datastore.model import DialogEntry, StateLogEntry
 class ScenarioSummary:
     name: str
     picture_path: Path
-    has_progress: bool
 
 
 @dataclass(frozen=True)

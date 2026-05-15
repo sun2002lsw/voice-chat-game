@@ -6,7 +6,6 @@ import type { ScenarioSummary, SessionState } from "../../types";
 export const sampleScenario: ScenarioSummary = {
   name: "test_cafe",
   profile_url: "/api/scenarios/test_cafe/profile",
-  has_progress: false,
 };
 
 export const sampleState: SessionState = {
@@ -41,7 +40,6 @@ export const sampleState: SessionState = {
 export const handlers: HttpHandler[] = [
   http.get("/api/scenarios", () => HttpResponse.json([sampleScenario])),
   http.post("/api/scenarios/:name/new", () => HttpResponse.json(sampleState)),
-  http.post("/api/scenarios/:name/continue", () => HttpResponse.json(sampleState)),
   http.get("/api/scenarios/:name/state", () => HttpResponse.json(sampleState)),
   http.post("/api/scenarios/:name/input", () => HttpResponse.json(sampleState)),
 ];

@@ -16,9 +16,6 @@ export function ScenarioCard({ scenario, onClick }: Props) {
         alt={scenario.name}
       />
       <span className={styles.name}>{scenario.name}</span>
-      {scenario.has_progress && (
-        <span className={styles.progressBadge}>진행 중</span>
-      )}
     </button>
   );
 }

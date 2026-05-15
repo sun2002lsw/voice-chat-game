@@ -9,7 +9,6 @@ import { ScenarioCard } from "./ScenarioCard";
 const baseScenario: ScenarioSummary = {
   name: "test_cafe",
   profile_url: "/api/scenarios/test_cafe/profile",
-  has_progress: false,
 };
 
 describe("ScenarioCard", () => {
@@ -34,22 +33,5 @@ describe("ScenarioCard", () => {
     await user.click(screen.getByRole("button"));
 
     expect(onClick).toHaveBeenCalledOnce();
-  });
-
-  it("shows a progress badge when has_progress is true", () => {
-    render(
-      <ScenarioCard
-        scenario={{ ...baseScenario, has_progress: true }}
-        onClick={() => {}}
-      />,
-    );
-
-    expect(screen.getByText("진행 중")).toBeInTheDocument();
-  });
-
-  it("does not show a progress badge when has_progress is false", () => {
-    render(<ScenarioCard scenario={baseScenario} onClick={() => {}} />);
-
-    expect(screen.queryByText("진행 중")).not.toBeInTheDocument();
   });
 });

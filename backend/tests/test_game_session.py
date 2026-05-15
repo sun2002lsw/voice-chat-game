@@ -110,7 +110,7 @@ def game_session(
     return GameSession(datastore=datastore, scenario_manager=manager)
 
 
-def test_list_scenarios_marks_no_progress_when_datastore_empty(
+def test_list_scenarios_returns_all_scenarios(
     game_session: GameSession,
     scenarios_root: Path,
 ):
@@ -121,19 +121,8 @@ def test_list_scenarios_marks_no_progress_when_datastore_empty(
         ScenarioSummary(
             name="test_cafe",
             picture_path=expected_picture,
-            has_progress=False,
         ),
     ]
-
-
-def test_list_scenarios_marks_has_progress_after_start_new(
-    game_session: GameSession,
-):
-    game_session.start_new("test_cafe")
-
-    summaries = game_session.list_scenarios()
-
-    assert summaries[0].has_progress is True
 
 
 def test_start_new_records_first_dialog_and_state_log_entry(
@@ -236,45 +225,6 @@ def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
     assert state.dialog[-1].text == "결제 두 번째 안내"
     assert state.current_step_name == "2. 결제"
     assert state.current_visit_count == 2
-
-
-def test_list_scenarios_marks_only_started_scenario_as_progressed(
-    tmp_path: Path,
-    scenarios_root: Path,
-    monkeypatch,
-):
-    interview_dir = scenarios_root / "test_interview"
-    interview_dir.mkdir()
-    (interview_dir / "picture.png").touch()
-    interview_graph = {
-        "scenario": "test_interview",
-        "steps": [
-            {
-                "step": "1. 시작",
-                "scene": "면접 시작",
-                "character": "Interviewer",
-                "complete_conditions": [],
-                "next_steps": [],
-            },
-        ],
-    }
-    _write_graph(interview_dir, interview_graph)
-    _make_step_dir(interview_dir, "1. 시작", script_text="안녕하세요")
-
-    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    datastore = Sqlite(db_path=tmp_path / "game.db")
-    datastore.init_schema()
-    session = GameSession(
-        datastore=datastore, scenario_manager=ScenarioManager(),
-    )
-
-    session.start_new("test_cafe")
-
-    summaries = session.list_scenarios()
-    summaries_by_name = {s.name: s for s in summaries}
-
-    assert summaries_by_name["test_cafe"].has_progress is True
-    assert summaries_by_name["test_interview"].has_progress is False
 
 
 def test_resume_returns_none_when_no_progress(game_session: GameSession):

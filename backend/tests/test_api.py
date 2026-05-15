@@ -107,16 +107,7 @@ def test_list_scenarios_returns_summary(client: TestClient):
     assert len(body) == 1
     summary = body[0]
     assert summary["name"] == "test_cafe"
-    assert summary["has_progress"] is False
     assert summary["profile_url"].endswith("/api/scenarios/test_cafe/profile")
-
-
-def test_list_scenarios_marks_has_progress_after_new(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.get("/api/scenarios")
-
-    assert response.json()[0]["has_progress"] is True
 
 
 def test_get_scenario_profile_returns_image(client: TestClient):
@@ -156,20 +147,6 @@ def test_post_new_returns_initial_state(client: TestClient):
     assert first_entry["character_script"] == "어서오세요"
     assert first_entry["user_input"] == ""
     assert first_entry["llm_index"] is None
-
-
-def test_post_continue_returns_404_when_no_progress(client: TestClient):
-    response = client.post("/api/scenarios/test_cafe/continue")
-    assert response.status_code == 404
-
-
-def test_post_continue_returns_state_when_progress_exists(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.post("/api/scenarios/test_cafe/continue")
-
-    assert response.status_code == 200
-    assert response.json()["current_step_name"] == "1. 인사"
 
 
 def test_get_state_returns_404_when_no_progress(client: TestClient):

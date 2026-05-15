@@ -1,7 +1,6 @@
 export type ScenarioSummary = {
   name: string;
   profile_url: string;
-  has_progress: boolean;
 };
 
 export type DialogEntry = {
