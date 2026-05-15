@@ -32,15 +32,6 @@ class Step:
     def conditions(self) -> list[str]:
         return [c for c in self.complete_conditions if c]
 
-    def invoke(self, index: int) -> tuple[str, int]:
-        names = self.next_step_names
-        if names:
-            last = len(names) - 1
-            selected = index if 0 <= index <= last else last
-        else:
-            selected = 0
-        return names[selected] if names else self.name, selected
-
     def get_all_outputs(self) -> list[StepOutput]:
         return [
             StepOutput(

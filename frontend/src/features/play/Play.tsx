@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { fetchState, HttpError, submitInput } from "../../api/client";
-import type { SessionState } from "../../types";
+import { fetchStep, HttpError } from "../../api/client";
+import type { StepInfo } from "../../types";
 
-import { ChatPanel } from "./chat/ChatPanel";
-import { DebugPanel } from "./debug/DebugPanel";
+import { ConditionsPanel } from "./conditions/ConditionsPanel";
 import { AudioPlayer } from "./picture/AudioPlayer";
 import { PicturePanel } from "./picture/PicturePanel";
+import { DialogPanel } from "./dialog/DialogPanel";
 
 import styles from "./Play.module.css";
 
@@ -18,17 +18,22 @@ const FALLBACK_AUDIO_HEIGHT = 60;
 
 export function Play() {
   const { name } = useParams<{ name: string }>();
-  const [state, setState] = useState<SessionState | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPendingSubmit, setIsPendingSubmit] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
+  const [dialog, setDialog] = useState<string[]>([]);
   const [cycleIndex, setCycleIndex] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [centerWidth, setCenterWidth] = useState<number | null>(null);
   const [pictureHeight, setPictureHeight] = useState<number | null>(null);
-  const navigate = useNavigate();
 
   const layoutRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLDivElement>(null);
   const aspectRef = useRef<number | null>(null);
+  const stepInfoRef = useRef<StepInfo | null>(null);
+  stepInfoRef.current = stepInfo;
 
   const recomputeLayout = useCallback(() => {
     const aspect = aspectRef.current;
@@ -37,28 +42,19 @@ export function Play() {
 
     const layoutH = layout.clientHeight;
     const layoutW = layout.clientWidth;
-
-    const playerEl = audioRef.current?.firstElementChild as
-      | HTMLElement
-      | undefined;
+    const playerEl = audioRef.current?.firstElementChild as HTMLElement | undefined;
     const minAudioH = playerEl?.offsetHeight ?? FALLBACK_AUDIO_HEIGHT;
-
     const maxPictureH = layoutH - minAudioH;
     const idealCenterW = maxPictureH * aspect;
     const maxCenterW = layoutW - MIN_LEFT_WIDTH - MIN_RIGHT_WIDTH;
 
-    let nextCenterW: number;
-    let nextPictureH: number;
     if (idealCenterW <= maxCenterW) {
-      nextCenterW = Math.max(MIN_CENTER_WIDTH, idealCenterW);
-      nextPictureH = maxPictureH;
+      setCenterWidth(Math.max(MIN_CENTER_WIDTH, idealCenterW));
+      setPictureHeight(maxPictureH);
     } else {
-      nextCenterW = maxCenterW;
-      nextPictureH = maxCenterW / aspect;
+      setCenterWidth(maxCenterW);
+      setPictureHeight(maxCenterW / aspect);
     }
-
-    setCenterWidth(nextCenterW);
-    setPictureHeight(nextPictureH);
   }, []);
 
   const handleAspectChange = useCallback(
@@ -74,77 +70,69 @@ export function Play() {
     return () => window.removeEventListener("resize", recomputeLayout);
   }, [recomputeLayout]);
 
+  // 최초 스텝 로드
   useEffect(() => {
-    if (name === undefined) return;
-    let cancelled = false;
-    fetchState(name)
-      .then((s) => {
-        if (cancelled) return;
-        setState(s);
+    const firstStepName = (location.state as { firstStepName?: string } | null)
+      ?.firstStepName;
+    if (!name || !firstStepName) {
+      navigate("/");
+      return;
+    }
+    fetchStep(name, firstStepName)
+      .then((info) => {
+        setStepInfo(info);
+        setDialog([info.scripts[0]]);
       })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        if (err instanceof HttpError && err.status === 404) {
-          navigate("/");
-          return;
-        }
-        setErrorMessage("진행 상태를 불러오지 못했습니다.");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [name, navigate]);
+      .catch(() => navigate("/"));
+  }, []);
 
-  // 스텝이 바뀌면 사이클 인덱스 리셋
+  // 스텝 변경 시 사이클 리셋
   useEffect(() => {
     setCycleIndex(0);
-  }, [state?.current_step_name]);
+  }, [stepInfo?.step_name]);
 
-  const alert = errorMessage !== null && (
-    <div role="alert" className={styles.alert}>
-      <span>{errorMessage}</span>
-      <button
-        type="button"
-        onClick={() => setErrorMessage(null)}
-        aria-label="알림 닫기"
-      >
-        닫기
-      </button>
-    </div>
-  );
+  // 키보드 숫자키로 다음 스텝 선택
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const info = stepInfoRef.current;
+      if (!info || info.is_terminal || isLoading) return;
+      // 입력 필드에 포커스가 있으면 무시
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
 
-  if (name === undefined || state === null) {
-    return alert || null;
-  }
+      const num = parseInt(e.key, 10);
+      if (isNaN(num) || num < 0 || num >= info.next_step_names.length) return;
+
+      const nextStepName = info.next_step_names[num];
+      setIsLoading(true);
+      fetchStep(name!, nextStepName)
+        .then((next) => {
+          setStepInfo(next);
+          setDialog((prev) => [...prev, next.scripts[0]]);
+        })
+        .catch((err: unknown) => {
+          if (err instanceof HttpError) {
+            setErrorMessage("스텝을 불러오지 못했습니다.");
+          }
+        })
+        .finally(() => setIsLoading(false));
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isLoading, name]);
 
   function handleAudioEnded() {
-    if (state === null) return;
-    setCycleIndex((i) => (i + 1) % state.voice_urls.length);
+    if (stepInfo === null) return;
+    setCycleIndex((i) => (i + 1) % stepInfo.voice_urls.length);
   }
 
-  async function handleSubmit(text: string) {
-    if (name === undefined) return;
-    if (isPendingSubmit) return;
-
-    const index = parseInt(text, 10);
-    if (isNaN(index)) return;
-
-    setIsPendingSubmit(true);
-    try {
-      const newState = await submitInput(name, index);
-      setState(newState);
-    } catch {
-      setErrorMessage("전송에 실패했습니다.");
-    } finally {
-      setIsPendingSubmit(false);
-    }
+  if (stepInfo === null) {
+    return null;
   }
 
-  const currentScript = state.scripts[cycleIndex % state.scripts.length];
-  const dialog = [
-    ...state.dialog.slice(0, -1),
-    currentScript,
-  ];
+  const currentScript = stepInfo.scripts[cycleIndex % stepInfo.scripts.length];
+  const displayDialog = [...dialog.slice(0, -1), currentScript];
 
   const layoutStyle =
     centerWidth !== null
@@ -163,36 +151,46 @@ export function Play() {
   return (
     <div className={styles.layout} ref={layoutRef} style={layoutStyle}>
       <aside className={styles.debug}>
-        <DebugPanel stateLog={state.state_log} />
+        <ConditionsPanel
+          conditions={stepInfo.conditions}
+          nextStepNames={stepInfo.next_step_names}
+          isTerminal={stepInfo.is_terminal}
+          isLoading={isLoading}
+        />
       </aside>
       <section className={styles.center} style={centerStyle}>
         <div className={styles.picture}>
           <PicturePanel
-            pictureUrl={state.picture_url}
-            stepKey={state.current_step_name}
+            pictureUrl={stepInfo.picture_url}
+            stepKey={stepInfo.step_name}
             onAspectChange={handleAspectChange}
           />
         </div>
         <div className={styles.audio} ref={audioRef}>
           <AudioPlayer
-            voiceUrl={state.voice_urls[cycleIndex % state.voice_urls.length]}
-            stepKey={state.current_step_name}
+            voiceUrl={stepInfo.voice_urls[cycleIndex % stepInfo.voice_urls.length]}
+            stepKey={stepInfo.step_name}
             audioKey={cycleIndex}
             onEnded={handleAudioEnded}
           />
         </div>
       </section>
       <aside className={styles.chat}>
-        <ChatPanel
-          scenarioName={state.scenario_name}
-          dialog={dialog}
-          isTerminal={state.is_terminal}
-          isPending={isPendingSubmit}
-          onSubmit={handleSubmit}
+        <DialogPanel
+          scenarioName={name ?? ""}
+          dialog={displayDialog}
+          isTerminal={stepInfo.is_terminal}
           onHome={() => navigate("/")}
         />
       </aside>
-      {alert}
+      {errorMessage !== null && (
+        <div role="alert" className={styles.alert}>
+          <span>{errorMessage}</span>
+          <button type="button" onClick={() => setErrorMessage(null)} aria-label="알림 닫기">
+            닫기
+          </button>
+        </div>
+      )}
     </div>
   );
 }

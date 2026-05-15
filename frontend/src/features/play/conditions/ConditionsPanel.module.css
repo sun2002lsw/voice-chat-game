@@ -1,0 +1,55 @@
+.panel {
+  height: 100%;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f7f7f7;
+  font-size: 0.9rem;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: #888;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.terminal {
+  color: #888;
+  font-style: italic;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  cursor: default;
+}
+
+.item.loading {
+  opacity: 0.4;
+}
+
+.index {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #555;
+  min-width: 1.2rem;
+}
+
+.condition {
+  word-break: break-word;
+}

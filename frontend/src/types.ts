@@ -1,24 +1,15 @@
 export type ScenarioSummary = {
   name: string;
   profile_url: string;
+  first_step_name: string;
 };
 
-export type StateLogEntry = {
+export type StepInfo = {
   step_name: string;
-  conditions: string[];
-  next_step_names: string[];
-  character_script: string;
-  selected_index: number | null;
-};
-
-export type SessionState = {
-  scenario_name: string;
-  current_step_name: string;
   is_terminal: boolean;
-  profile_url: string;
   picture_url: string;
   scripts: string[];
   voice_urls: string[];
-  dialog: string[];
-  state_log: StateLogEntry[];
+  conditions: string[];
+  next_step_names: string[];
 };

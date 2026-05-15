@@ -285,7 +285,7 @@ def test_get_constructs_first_step_from_yaml(scenarios_root, monkeypatch):
 
     scenario = ScenarioManager().get("test_cafe")
 
-    first_step = scenario.current_step
+    first_step = scenario.first_step
     assert isinstance(first_step, Step)
     assert first_step.name == "1. 인사"
     assert first_step.scene == "직원이 인사한다"
@@ -300,7 +300,7 @@ def test_get_uses_steps_subdir_for_step_dir(scenarios_root, monkeypatch):
     scenario = ScenarioManager().get("test_cafe")
 
     expected_step_dir = scenarios_root / "test_cafe" / "steps" / "1. 인사"
-    assert scenario.current_step.step_dir == expected_step_dir
+    assert scenario.first_step.step_dir == expected_step_dir
 
 
 def test_get_raises_for_unknown_scenario(scenarios_root, monkeypatch):
@@ -332,14 +332,11 @@ def test_init_skips_non_directory_entries_in_root(scenarios_root, monkeypatch):
     assert set(manager._scenarios.keys()) == {"test_cafe"}
 
 
-def test_loaded_scenario_invokes_through_to_real_step_transition(
+def test_loaded_scenario_first_step_name(
     scenarios_root, monkeypatch
 ):
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
 
     scenario = ScenarioManager().get("test_cafe")
-    assert scenario.current_step.name == "1. 인사"
-
-    scenario.invoke(0)
-
-    assert scenario.current_step.name == "2. 결제"
+    assert scenario.first_step.name == "1. 인사"
+    assert scenario.get_step("2. 결제") is not None

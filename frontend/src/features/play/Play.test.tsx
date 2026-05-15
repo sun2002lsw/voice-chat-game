@@ -1,15 +1,10 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import {
-  MemoryRouter,
-  Route,
-  Routes,
-  useLocation,
-} from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import { sampleState } from "../../test/mocks/handlers";
+import { sampleStep } from "../../test/mocks/handlers";
 import { server } from "../../test/mocks/server";
 
 import { Play } from "./Play";
@@ -19,9 +14,11 @@ function LocationProbe() {
   return <div data-testid="location">{location.pathname}</div>;
 }
 
-function renderPlay(name: string) {
+function renderPlay(name: string, firstStepName: string) {
   return render(
-    <MemoryRouter initialEntries={[`/play/${encodeURIComponent(name)}`]}>
+    <MemoryRouter
+      initialEntries={[{ pathname: `/play/${encodeURIComponent(name)}`, state: { firstStepName } }]}
+    >
       <Routes>
         <Route path="/play/:name" element={<Play />} />
         <Route path="/" element={<LocationProbe />} />
@@ -31,105 +28,59 @@ function renderPlay(name: string) {
 }
 
 describe("Play", () => {
-  it("fetches state on mount and shows the character dialog", async () => {
-    server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json(sampleState),
-      ),
-    );
-
-    renderPlay("test_cafe");
+  it("fetches first step on mount and shows script", async () => {
+    renderPlay("test_cafe", "1. 인사");
 
     const matches = await screen.findAllByText("어서오세요");
     expect(matches.length).toBeGreaterThan(0);
   });
 
-  it("redirects to lobby when fetchState 404s", async () => {
-    server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json({ detail: "not found" }, { status: 404 }),
-      ),
+  it("redirects to lobby when no navigation state", async () => {
+    render(
+      <MemoryRouter initialEntries={["/play/test_cafe"]}>
+        <Routes>
+          <Route path="/play/:name" element={<Play />} />
+          <Route path="/" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>,
     );
-
-    renderPlay("test_cafe");
 
     await waitFor(() => {
       expect(screen.getByTestId("location")).toHaveTextContent("/");
     });
   });
 
-  it("submits input and renders the new state", async () => {
-    const updatedState = {
-      ...sampleState,
-      current_step_name: "2. 결제",
+  it("navigates to next step on number key press", async () => {
+    const nextStep = {
+      ...sampleStep,
+      step_name: "2. 결제",
       scripts: ["결제 도와드릴게요"],
-      voice_urls: ["/api/scenarios/test_cafe/voice/0"],
-      dialog: [...sampleState.dialog, "결제 도와드릴게요"],
+      is_terminal: true,
+      conditions: [],
+      next_step_names: [],
     };
     server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json(sampleState),
-      ),
-      http.post("/api/scenarios/:name/input", () =>
-        HttpResponse.json(updatedState),
+      http.get("/api/scenarios/:name/steps/2.%20%EA%B2%B0%EC%A0%9C", () =>
+        HttpResponse.json(nextStep),
       ),
     );
 
     const user = userEvent.setup();
-    renderPlay("test_cafe");
+    renderPlay("test_cafe", "1. 인사");
 
     await screen.findAllByText("어서오세요");
-    await user.type(screen.getByRole("textbox"), "0{Enter}");
+    await user.keyboard("0");
 
-    const updated = await screen.findAllByText("결제 도와드릴게요");
-    expect(updated.length).toBeGreaterThan(0);
+    await screen.findAllByText("결제 도와드릴게요");
   });
 
-  it("disables input when is_terminal is true", async () => {
+  it("shows 종료 when step is terminal", async () => {
     server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json({ ...sampleState, is_terminal: true }),
+      http.get("/api/scenarios/:name/steps/:step", () =>
+        HttpResponse.json({ ...sampleStep, is_terminal: true, next_step_names: [] }),
       ),
     );
-
-    renderPlay("test_cafe");
-
-    await screen.findAllByText("어서오세요");
-    expect(screen.getByRole("textbox")).toBeDisabled();
-  });
-
-  it("shows an alert (and does not redirect) when fetchState 5xx", async () => {
-    server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json({ detail: "boom" }, { status: 500 }),
-      ),
-    );
-
-    renderPlay("test_cafe");
-
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("진행 상태를 불러오지 못했습니다.");
-    // LocationProbe renders only on path "/", so its absence confirms no redirect
-    expect(screen.queryByTestId("location")).toBeNull();
-  });
-
-  it("shows an alert when submitInput fails", async () => {
-    server.use(
-      http.get("/api/scenarios/:name/state", () =>
-        HttpResponse.json(sampleState),
-      ),
-      http.post("/api/scenarios/:name/input", () =>
-        HttpResponse.json({ detail: "boom" }, { status: 500 }),
-      ),
-    );
-
-    const user = userEvent.setup();
-    renderPlay("test_cafe");
-
-    await screen.findAllByText("어서오세요");
-    await user.type(screen.getByRole("textbox"), "0{Enter}");
-
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("전송에 실패했습니다.");
+    renderPlay("test_cafe", "1. 인사");
+    expect(await screen.findByText("종료")).toBeInTheDocument();
   });
 });

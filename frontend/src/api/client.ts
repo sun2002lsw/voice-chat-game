@@ -1,4 +1,4 @@
-import type { ScenarioSummary, SessionState } from "../types";
+import type { ScenarioSummary, StepInfo } from "../types";
 
 const BASE = "";
 
@@ -16,52 +16,21 @@ export async function fetchScenarios(): Promise<ScenarioSummary[]> {
   return getJson<ScenarioSummary[]>("/api/scenarios");
 }
 
-export async function startNew(name: string): Promise<SessionState> {
-  return postJson<SessionState>(scenarioPath(name, "/new"));
-}
-
-export async function fetchState(name: string): Promise<SessionState> {
-  return getJson<SessionState>(scenarioPath(name, "/state"));
-}
-
-export async function submitInput(
-  name: string,
-  index: number,
-): Promise<SessionState> {
-  return postJson<SessionState>(scenarioPath(name, "/input"), { index });
+export async function fetchStep(
+  scenarioName: string,
+  stepName: string,
+): Promise<StepInfo> {
+  return getJson<StepInfo>(
+    `/api/scenarios/${encodeURIComponent(scenarioName)}/steps/${encodeURIComponent(stepName)}`,
+  );
 }
 
 async function getJson<T>(path: string): Promise<T> {
   const resp = await fetch(`${BASE}${path}`);
   if (!resp.ok) {
     const detail = await safeReadText(resp);
-    throw new HttpError(
-      `GET ${path} failed: ${resp.status} ${detail}`,
-      resp.status,
-    );
+    throw new HttpError(`GET ${path} failed: ${resp.status} ${detail}`, resp.status);
   }
-
-  return resp.json() as Promise<T>;
-}
-
-async function postJson<T>(path: string, body?: unknown): Promise<T> {
-  const init: RequestInit = {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-  };
-  if (body !== undefined) {
-    init.body = JSON.stringify(body);
-  }
-
-  const resp = await fetch(`${BASE}${path}`, init);
-  if (!resp.ok) {
-    const detail = await safeReadText(resp);
-    throw new HttpError(
-      `POST ${path} failed: ${resp.status} ${detail}`,
-      resp.status,
-    );
-  }
-
   return resp.json() as Promise<T>;
 }
 
@@ -71,8 +40,4 @@ async function safeReadText(resp: Response): Promise<string> {
   } catch {
     return "";
   }
-}
-
-function scenarioPath(name: string, suffix: string): string {
-  return `/api/scenarios/${encodeURIComponent(name)}${suffix}`;
 }

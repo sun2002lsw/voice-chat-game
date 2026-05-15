@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import pytest
 import yaml
@@ -65,187 +66,76 @@ def scenarios_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def reset_singletons(monkeypatch):
+def reset_singletons():
     Singleton._instances.pop(ScenarioManager, None)
     yield
     Singleton._instances.pop(ScenarioManager, None)
 
 
 @pytest.fixture
-def client(
-    scenarios_root: Path,
-    monkeypatch,
-) -> TestClient:
+def client(scenarios_root: Path, monkeypatch) -> TestClient:
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    app = build_app()
-    return TestClient(app)
+    return TestClient(build_app())
 
 
-def test_list_scenarios_returns_summary(client: TestClient):
-    response = client.get("/api/scenarios")
+def test_list_scenarios_returns_name_and_first_step(client: TestClient):
+    body = client.get("/api/scenarios").json()
 
-    assert response.status_code == 200
-    body = response.json()
     assert len(body) == 1
-    summary = body[0]
-    assert summary["name"] == "test_cafe"
-    assert summary["profile_url"].endswith("/api/scenarios/test_cafe/profile")
+    assert body[0]["name"] == "test_cafe"
+    assert body[0]["first_step_name"] == "1. 인사"
+    assert body[0]["profile_url"].endswith("/profile")
 
 
-def test_get_scenario_profile_returns_image(client: TestClient):
-    response = client.get("/api/scenarios/test_cafe/profile")
-
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("image/")
-    assert len(response.content) > 0
+def test_get_profile_returns_image(client: TestClient):
+    resp = client.get("/api/scenarios/test_cafe/profile")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("image/")
 
 
-def test_get_scenario_profile_returns_404_for_unknown_scenario(client: TestClient):
-    response = client.get("/api/scenarios/unknown_scenario/profile")
-    assert response.status_code == 404
+def test_get_profile_404_for_unknown(client: TestClient):
+    assert client.get("/api/scenarios/unknown/profile").status_code == 404
 
 
-def test_post_new_returns_initial_state(client: TestClient):
-    response = client.post("/api/scenarios/test_cafe/new")
+def test_get_step_returns_step_data(client: TestClient):
+    step_name = quote("1. 인사")
+    body = client.get(f"/api/scenarios/test_cafe/steps/{step_name}").json()
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["scenario_name"] == "test_cafe"
-    assert body["current_step_name"] == "1. 인사"
+    assert body["step_name"] == "1. 인사"
     assert body["is_terminal"] is False
-    assert body["picture_url"] == "/api/scenarios/test_cafe/picture"
-    assert body["voice_urls"] == ["/api/scenarios/test_cafe/voice/0"]
     assert body["scripts"] == ["어서오세요"]
-
-    assert body["dialog"] == ["어서오세요"]
-
-    assert len(body["state_log"]) == 1
-    first_entry = body["state_log"][0]
-    assert first_entry["step_name"] == "1. 인사"
-    assert first_entry["conditions"] == ["주문"]
-    assert first_entry["next_step_names"] == ["2. 결제"]
-    assert first_entry["character_script"] == "어서오세요"
-    assert first_entry["selected_index"] is None
+    assert len(body["voice_urls"]) == 1
+    assert body["conditions"] == ["주문"]
+    assert body["next_step_names"] == ["2. 결제"]
 
 
-def test_get_state_returns_404_when_no_progress(client: TestClient):
-    response = client.get("/api/scenarios/test_cafe/state")
-    assert response.status_code == 404
+def test_get_step_terminal(client: TestClient):
+    step_name = quote("2. 결제")
+    body = client.get(f"/api/scenarios/test_cafe/steps/{step_name}").json()
 
-
-def test_get_state_returns_current_session_state(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.get("/api/scenarios/test_cafe/state")
-
-    assert response.status_code == 200
-    assert response.json()["current_step_name"] == "1. 인사"
-
-
-def test_post_input_advances_to_next_step_and_appends_logs(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.post(
-        "/api/scenarios/test_cafe/input",
-        json={"index": 0},
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["current_step_name"] == "2. 결제"
-    assert body["dialog"] == ["어서오세요", "결제 도와드릴게요"]
-    assert len(body["state_log"]) == 2
-
-    completed = body["state_log"][0]
-    assert completed["step_name"] == "1. 인사"
-    assert completed["selected_index"] == 0
-
-    started = body["state_log"][1]
-    assert started["step_name"] == "2. 결제"
-    assert started["selected_index"] is None
-    assert started["character_script"] == "결제 도와드릴게요"
-
-
-def test_post_input_returns_404_when_no_progress(client: TestClient):
-    response = client.post(
-        "/api/scenarios/test_cafe/input",
-        json={"index": 0},
-    )
-    assert response.status_code == 404
-
-
-def test_get_picture_returns_image(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.get("/api/scenarios/test_cafe/picture")
-
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("image/")
-    assert len(response.content) > 0
-
-
-def test_get_voice_returns_audio_bytes(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.get("/api/scenarios/test_cafe/voice/0")
-
-    assert response.status_code == 200
-    assert len(response.content) > 0
-
-
-def test_get_picture_returns_404_when_no_progress(client: TestClient):
-    response = client.get("/api/scenarios/test_cafe/picture")
-    assert response.status_code == 404
-
-
-def test_get_voice_returns_404_when_no_progress(client: TestClient):
-    response = client.get("/api/scenarios/test_cafe/voice/0")
-    assert response.status_code == 404
-
-
-def test_post_input_returns_422_when_index_field_missing(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.post("/api/scenarios/test_cafe/input", json={})
-
-    assert response.status_code == 422
-
-
-def test_get_picture_reflects_current_step_after_transition(
-    scenarios_root: Path,
-    monkeypatch,
-):
-    distinct_payment_picture = b"\x89PNG\r\n\x1a\nPAYMENT"
-    payment_step_dir = scenarios_root / "test_cafe" / "steps" / "2. 결제"
-    (payment_step_dir / "picture.png").write_bytes(distinct_payment_picture)
-
-    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    app = build_app()
-    client = TestClient(app)
-
-    client.post("/api/scenarios/test_cafe/new")
-    client.post(
-        "/api/scenarios/test_cafe/input",
-        json={"index": 0},
-    )
-
-    response = client.get("/api/scenarios/test_cafe/picture")
-
-    assert response.status_code == 200
-    assert response.content == distinct_payment_picture
-
-
-def test_post_input_marks_is_terminal_true_at_terminal_step(client: TestClient):
-    client.post("/api/scenarios/test_cafe/new")
-
-    response = client.post(
-        "/api/scenarios/test_cafe/input",
-        json={"index": 0},
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["current_step_name"] == "2. 결제"
     assert body["is_terminal"] is True
+    assert body["next_step_names"] == []
 
 
+def test_get_step_404_for_unknown(client: TestClient):
+    assert client.get("/api/scenarios/test_cafe/steps/ghost").status_code == 404
+
+
+def test_get_step_picture_returns_image(client: TestClient):
+    step_name = quote("1. 인사")
+    resp = client.get(f"/api/scenarios/test_cafe/steps/{step_name}/picture")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("image/")
+
+
+def test_get_step_voice_returns_audio(client: TestClient):
+    step_name = quote("1. 인사")
+    resp = client.get(f"/api/scenarios/test_cafe/steps/{step_name}/voice/0")
+    assert resp.status_code == 200
+    assert len(resp.content) > 0
+
+
+def test_get_step_voice_clamps_index(client: TestClient):
+    step_name = quote("1. 인사")
+    resp = client.get(f"/api/scenarios/test_cafe/steps/{step_name}/voice/99")
+    assert resp.status_code == 200

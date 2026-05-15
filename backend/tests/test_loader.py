@@ -96,7 +96,7 @@ def test_load_scenario_happy_path(scenarios_root):
     sc = load_scenario("hello")
 
     assert sc.name == "hello"
-    assert sc.current_step_name == "1. greet"
+    assert sc.first_step.name == "1. greet"
 
 
 def test_load_scenario_raises_when_top_level_not_mapping(scenarios_root):

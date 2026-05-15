@@ -1,37 +1,25 @@
 import type { HttpHandler } from "msw";
 import { http, HttpResponse } from "msw";
 
-import type { ScenarioSummary, SessionState } from "../../types";
-
+import type { ScenarioSummary, StepInfo } from "../../types";
 
 export const sampleScenario: ScenarioSummary = {
   name: "test_cafe",
   profile_url: "/api/scenarios/test_cafe/profile",
+  first_step_name: "1. 인사",
 };
 
-export const sampleState: SessionState = {
-  scenario_name: "test_cafe",
-  current_step_name: "1. 인사",
+export const sampleStep: StepInfo = {
+  step_name: "1. 인사",
   is_terminal: false,
-  profile_url: "/api/scenarios/test_cafe/profile",
-  picture_url: "/api/scenarios/test_cafe/picture",
+  picture_url: "/api/scenarios/test_cafe/steps/1.%20%EC%9D%B8%EC%82%AC/picture",
   scripts: ["어서오세요"],
-  voice_urls: ["/api/scenarios/test_cafe/voice/0"],
-  dialog: ["어서오세요"],
-  state_log: [
-    {
-      step_name: "1. 인사",
-      conditions: ["주문"],
-      next_step_names: ["2. 결제"],
-      character_script: "어서오세요",
-      selected_index: null,
-    },
-  ],
+  voice_urls: ["/api/scenarios/test_cafe/steps/1.%20%EC%9D%B8%EC%82%AC/voice/0"],
+  conditions: ["주문"],
+  next_step_names: ["2. 결제"],
 };
 
 export const handlers: HttpHandler[] = [
   http.get("/api/scenarios", () => HttpResponse.json([sampleScenario])),
-  http.post("/api/scenarios/:name/new", () => HttpResponse.json(sampleState)),
-  http.get("/api/scenarios/:name/state", () => HttpResponse.json(sampleState)),
-  http.post("/api/scenarios/:name/input", () => HttpResponse.json(sampleState)),
+  http.get("/api/scenarios/:name/steps/:step", () => HttpResponse.json(sampleStep)),
 ];

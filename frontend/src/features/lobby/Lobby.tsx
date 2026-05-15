@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { fetchScenarios, startNew } from "../../api/client";
+import { fetchScenarios } from "../../api/client";
 import { ScenarioCard } from "./ScenarioCard";
 import type { ScenarioSummary } from "../../types";
 
 import styles from "./Lobby.module.css";
-
-function playPath(name: string): string {
-  return `/play/${encodeURIComponent(name)}`;
-}
 
 export function Lobby() {
   const [scenarios, setScenarios] = useState<ScenarioSummary[]>([]);
@@ -27,13 +23,10 @@ export function Lobby() {
       .catch(() => setErrorMessage("시나리오 목록을 불러오지 못했습니다."));
   }, []);
 
-  async function handleCardClick(scenario: ScenarioSummary) {
-    try {
-      await startNew(scenario.name);
-      navigate(playPath(scenario.name));
-    } catch {
-      setErrorMessage("새 게임을 시작하지 못했습니다.");
-    }
+  function handleCardClick(scenario: ScenarioSummary) {
+    navigate(`/play/${encodeURIComponent(scenario.name)}`, {
+      state: { firstStepName: scenario.first_step_name },
+    });
   }
 
   return (
