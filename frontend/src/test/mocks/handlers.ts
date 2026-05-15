@@ -3,6 +3,7 @@ import { http, HttpResponse } from "msw";
 
 import type { ScenarioSummary, SessionState } from "../../types";
 
+
 export const sampleScenario: ScenarioSummary = {
   name: "test_cafe",
   profile_url: "/api/scenarios/test_cafe/profile",
@@ -16,13 +17,7 @@ export const sampleState: SessionState = {
   picture_url: "/api/scenarios/test_cafe/picture",
   scripts: ["어서오세요"],
   voice_urls: ["/api/scenarios/test_cafe/voice/0"],
-  dialog: [
-    {
-      role: "character",
-      text: "어서오세요",
-      created_at: "2026-05-03T12:00:00Z",
-    },
-  ],
+  dialog: ["어서오세요"],
   state_log: [
     {
       step_name: "1. 인사",

@@ -3,12 +3,6 @@ export type ScenarioSummary = {
   profile_url: string;
 };
 
-export type DialogEntry = {
-  role: "character" | "user";
-  text: string;
-  created_at: string;
-};
-
 export type StateLogEntry = {
   step_name: string;
   conditions: string[];
@@ -25,6 +19,6 @@ export type SessionState = {
   picture_url: string;
   scripts: string[];
   voice_urls: string[];
-  dialog: DialogEntry[];
+  dialog: string[];
   state_log: StateLogEntry[];
 };

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import BaseModel
 
 from game_session.model import SessionState
@@ -8,12 +6,6 @@ from game_session.model import SessionState
 class ScenarioSummaryDTO(BaseModel):
     name: str
     profile_url: str
-
-
-class DialogEntryDTO(BaseModel):
-    role: str
-    text: str
-    created_at: datetime
 
 
 class StateLogEntryDTO(BaseModel):
@@ -32,7 +24,7 @@ class SessionStateDTO(BaseModel):
     picture_url: str
     scripts: list[str]
     voice_urls: list[str]
-    dialog: list[DialogEntryDTO]
+    dialog: list[str]
     state_log: list[StateLogEntryDTO]
 
 
@@ -48,10 +40,6 @@ def to_session_state_dto(state: SessionState) -> SessionStateDTO:
         for i in range(len(state.voice_paths))
     ]
 
-    dialog_dtos = [
-        DialogEntryDTO(role=e.role, text=e.text, created_at=e.created_at)
-        for e in state.dialog
-    ]
     state_log_dtos = [
         StateLogEntryDTO(
             step_name=e.step_name,
@@ -71,6 +59,6 @@ def to_session_state_dto(state: SessionState) -> SessionStateDTO:
         picture_url=f"/api/scenarios/{name}/picture",
         scripts=state.scripts,
         voice_urls=voice_urls,
-        dialog=dialog_dtos,
+        dialog=state.dialog,
         state_log=state_log_dtos,
     )

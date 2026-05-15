@@ -1,13 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
-
-
-@dataclass(frozen=True)
-class DialogEntry:
-    role: str
-    text: str
-    created_at: datetime
 
 
 @dataclass(frozen=True)
@@ -34,5 +26,5 @@ class SessionState:
     scripts: list[str]
     voice_paths: list[Path]
     profile_path: Path
-    dialog: list[DialogEntry]
+    dialog: list[str]
     state_log: list[StateLogEntry]

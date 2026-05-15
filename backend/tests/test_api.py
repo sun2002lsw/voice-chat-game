@@ -117,9 +117,7 @@ def test_post_new_returns_initial_state(client: TestClient):
     assert body["voice_urls"] == ["/api/scenarios/test_cafe/voice/0"]
     assert body["scripts"] == ["어서오세요"]
 
-    assert len(body["dialog"]) == 1
-    assert body["dialog"][0]["role"] == "character"
-    assert body["dialog"][0]["text"] == "어서오세요"
+    assert body["dialog"] == ["어서오세요"]
 
     assert len(body["state_log"]) == 1
     first_entry = body["state_log"][0]
@@ -155,7 +153,7 @@ def test_post_input_advances_to_next_step_and_appends_logs(client: TestClient):
     assert response.status_code == 200
     body = response.json()
     assert body["current_step_name"] == "2. 결제"
-    assert len(body["dialog"]) == 3
+    assert body["dialog"] == ["어서오세요", "결제 도와드릴게요"]
     assert len(body["state_log"]) == 2
 
     completed = body["state_log"][0]

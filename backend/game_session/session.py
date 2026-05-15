@@ -1,8 +1,6 @@
 import dataclasses
-from datetime import UTC, datetime
 
 from game_session.model import (
-    DialogEntry,
     ScenarioSummary,
     SessionState,
     StateLogEntry,
@@ -15,7 +13,7 @@ from scenario.step import Step
 class GameSession:
     def __init__(self, scenario_manager: ScenarioManager) -> None:
         self._manager = scenario_manager
-        self._dialog: dict[str, list[DialogEntry]] = {}
+        self._dialog: dict[str, list[str]] = {}
         self._state_log: dict[str, list[StateLogEntry]] = {}
 
     def list_scenarios(self) -> list[ScenarioSummary]:
@@ -34,10 +32,7 @@ class GameSession:
         first_step = scenario.current_step
         first_script = first_step.get_all_outputs()[0].script.read_text(encoding="utf-8")
 
-        now = datetime.now(UTC)
-        self._dialog[scenario_name] = [
-            DialogEntry(role="character", text=first_script, created_at=now)
-        ]
+        self._dialog[scenario_name] = [first_script]
         self._state_log[scenario_name] = [
             _state_entry_from_step(first_step, first_script)
         ]
@@ -54,16 +49,12 @@ class GameSession:
         scenario = self._manager.get(scenario_name)
         selected_index = scenario.invoke(index)
 
-        now = datetime.now(UTC)
-        user_dialog = DialogEntry(role="user", text=str(index), created_at=now)
-
         new_step = scenario.current_step
         new_script = new_step.get_all_outputs()[0].script.read_text(encoding="utf-8")
-        new_character_dialog = DialogEntry(role="character", text=new_script, created_at=now)
 
         state_log = self._state_log[scenario_name]
         state_log[-1] = dataclasses.replace(state_log[-1], selected_index=selected_index)
-        self._dialog[scenario_name].extend([user_dialog, new_character_dialog])
+        self._dialog[scenario_name].append(new_script)
         state_log.append(_state_entry_from_step(new_step, new_script))
 
         return self._build_session_state(scenario_name, scenario)

@@ -2,22 +2,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import type { DialogEntry } from "../../../types";
-
 import { ChatPanel } from "./ChatPanel";
 
-const dialog: DialogEntry[] = [
-  {
-    role: "character",
-    text: "어서오세요",
-    created_at: "2026-05-03T14:00:00Z",
-  },
-  {
-    role: "user",
-    text: "주문할게요",
-    created_at: "2026-05-03T14:01:00Z",
-  },
-];
+const dialog = ["어서오세요", "결제 도와드릴게요"];
 
 describe("ChatPanel", () => {
   it("renders scenario name at the top", () => {
@@ -48,7 +35,7 @@ describe("ChatPanel", () => {
     );
 
     expect(screen.getByText("어서오세요")).toBeInTheDocument();
-    expect(screen.getByText("주문할게요")).toBeInTheDocument();
+    expect(screen.getByText("결제 도와드릴게요")).toBeInTheDocument();
   });
 
   it("disables input when isTerminal is true", () => {
@@ -114,9 +101,9 @@ describe("ChatPanel", () => {
       />,
     );
 
-    await user.type(screen.getByRole("textbox"), "다음 입력{Enter}");
+    await user.type(screen.getByRole("textbox"), "0{Enter}");
 
-    expect(onSubmit).toHaveBeenCalledWith("다음 입력");
+    expect(onSubmit).toHaveBeenCalledWith("0");
   });
 
   it("calls onHome when 로비로 가기 button is clicked", async () => {

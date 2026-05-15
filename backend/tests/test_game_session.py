@@ -108,9 +108,7 @@ def test_start_new_records_first_dialog_and_state_log_entry(
 ):
     state = game_session.start_new("test_cafe")
 
-    assert len(state.dialog) == 1
-    assert state.dialog[0].role == "character"
-    assert state.dialog[0].text == "어서오세요"
+    assert state.dialog == ["어서오세요"]
 
     assert len(state.state_log) == 1
     first = state.state_log[0]
@@ -132,17 +130,14 @@ def test_start_new_clears_existing_progress(game_session: GameSession):
     assert len(state.state_log) == 1
 
 
-def test_submit_input_appends_user_and_character_dialogs(
+def test_submit_input_appends_character_dialog(
     game_session: GameSession,
 ):
     game_session.start_new("test_cafe")
 
     state = game_session.submit_input("test_cafe", 0)
 
-    roles = [d.role for d in state.dialog]
-    assert roles == ["character", "user", "character"]
-    assert state.dialog[1].text == "0"
-    assert state.dialog[2].text == "결제 도와드릴게요"
+    assert state.dialog == ["어서오세요", "결제 도와드릴게요"]
 
 
 def test_submit_input_transitions_to_next_step(game_session: GameSession):
@@ -177,7 +172,7 @@ def test_submit_input_completes_first_entry_and_starts_next(
     assert started.selected_index is None
 
 
-def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
+def test_submit_input_appends_new_character_dialog_on_self_loop(
     game_session: GameSession,
 ):
     game_session.start_new("test_cafe")
@@ -185,11 +180,7 @@ def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
 
     state = game_session.submit_input("test_cafe", 0)
 
-    assert len(state.dialog) == 5
-    assert state.dialog[-2].role == "user"
-    assert state.dialog[-2].text == "0"
-    assert state.dialog[-1].role == "character"
-    assert state.dialog[-1].text == "결제 도와드릴게요"
+    assert state.dialog == ["어서오세요", "결제 도와드릴게요", "결제 도와드릴게요"]
     assert state.current_step_name == "2. 결제"
 
 

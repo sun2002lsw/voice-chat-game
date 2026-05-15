@@ -64,19 +64,7 @@ describe("Play", () => {
       current_step_name: "2. 결제",
       scripts: ["결제 도와드릴게요"],
       voice_urls: ["/api/scenarios/test_cafe/voice/0"],
-      dialog: [
-        ...sampleState.dialog,
-        {
-          role: "user" as const,
-          text: "0",
-          created_at: "2026-05-03T14:01:00Z",
-        },
-        {
-          role: "character" as const,
-          text: "결제 도와드릴게요",
-          created_at: "2026-05-03T14:01:01Z",
-        },
-      ],
+      dialog: [...sampleState.dialog, "결제 도와드릴게요"],
     };
     server.use(
       http.get("/api/scenarios/:name/state", () =>

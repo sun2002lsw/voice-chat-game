@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { fetchState, HttpError, submitInput } from "../../api/client";
-import type { DialogEntry, SessionState } from "../../types";
+import type { SessionState } from "../../types";
 
 import { ChatPanel } from "./chat/ChatPanel";
 import { DebugPanel } from "./debug/DebugPanel";
@@ -20,7 +20,7 @@ export function Play() {
   const { name } = useParams<{ name: string }>();
   const [state, setState] = useState<SessionState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [pendingUserText, setPendingUserText] = useState<string | null>(null);
+  const [isPendingSubmit, setIsPendingSubmit] = useState(false);
   const [cycleIndex, setCycleIndex] = useState(0);
   const [centerWidth, setCenterWidth] = useState<number | null>(null);
   const [pictureHeight, setPictureHeight] = useState<number | null>(null);
@@ -124,47 +124,27 @@ export function Play() {
 
   async function handleSubmit(text: string) {
     if (name === undefined) return;
-    if (pendingUserText !== null) return;
+    if (isPendingSubmit) return;
 
     const index = parseInt(text, 10);
     if (isNaN(index)) return;
 
-    setPendingUserText(text);
+    setIsPendingSubmit(true);
     try {
       const newState = await submitInput(name, index);
       setState(newState);
     } catch {
       setErrorMessage("전송에 실패했습니다.");
     } finally {
-      setPendingUserText(null);
+      setIsPendingSubmit(false);
     }
   }
 
-  const isPending = pendingUserText !== null;
-
-  // 현재 사이클 스크립트로 마지막 캐릭터 대화를 업데이트
   const currentScript = state.scripts[cycleIndex % state.scripts.length];
-  const cycledDialog: DialogEntry[] = (() => {
-    const base = [...state.dialog];
-    for (let i = base.length - 1; i >= 0; i--) {
-      if (base[i].role === "character") {
-        base[i] = { ...base[i], text: currentScript };
-        break;
-      }
-    }
-    return base;
-  })();
-
-  const dialog: DialogEntry[] = isPending
-    ? [
-        ...cycledDialog,
-        {
-          role: "user",
-          text: pendingUserText,
-          created_at: new Date().toISOString(),
-        },
-      ]
-    : cycledDialog;
+  const dialog = [
+    ...state.dialog.slice(0, -1),
+    currentScript,
+  ];
 
   const layoutStyle =
     centerWidth !== null
@@ -207,7 +187,7 @@ export function Play() {
           scenarioName={state.scenario_name}
           dialog={dialog}
           isTerminal={state.is_terminal}
-          isPending={isPending}
+          isPending={isPendingSubmit}
           onSubmit={handleSubmit}
           onHome={() => navigate("/")}
         />

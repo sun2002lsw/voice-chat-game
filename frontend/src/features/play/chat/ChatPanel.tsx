@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
 
-import type { DialogEntry } from "../../../types";
-
 import { ChatInput } from "./ChatInput";
 import styles from "./ChatPanel.module.css";
 import { MessageBubble } from "./MessageBubble";
@@ -9,7 +7,7 @@ import { TypingIndicator } from "./TypingIndicator";
 
 type Props = {
   scenarioName: string;
-  dialog: DialogEntry[];
+  dialog: string[];
   isTerminal: boolean;
   isPending: boolean;
   onSubmit: (text: string) => void;
@@ -44,8 +42,8 @@ export function ChatPanel({
         <h2 className={styles.title}>{scenarioName}</h2>
       </header>
       <div className={styles.dialog}>
-        {dialog.map((entry, index) => (
-          <MessageBubble key={index} entry={entry} />
+        {dialog.map((text, index) => (
+          <MessageBubble key={index} text={text} />
         ))}
         {isPending && <TypingIndicator />}
         <div ref={dialogEndRef} />
