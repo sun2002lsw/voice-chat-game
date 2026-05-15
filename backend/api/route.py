@@ -71,10 +71,12 @@ def get_picture(request: Request, name: str) -> FileResponse:
     return FileResponse(state.picture_path, headers=_NO_CACHE)
 
 
-@router.get("/scenarios/{name}/voice")
-def get_voice(request: Request, name: str) -> FileResponse:
+@router.get("/scenarios/{name}/voice/{index}")
+def get_voice(request: Request, name: str, index: int) -> FileResponse:
     state = _require_state(_get_session(request), name)
-    return FileResponse(state.voice_path, headers=_NO_CACHE)
+    voices = state.voice_paths
+    clamped = min(max(0, index), len(voices) - 1)
+    return FileResponse(voices[clamped], headers=_NO_CACHE)
 
 
 def _get_session(request: Request) -> GameSession:

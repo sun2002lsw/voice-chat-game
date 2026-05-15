@@ -11,7 +11,6 @@ export type DialogEntry = {
 
 export type StateLogEntry = {
   step_name: string;
-  visit_count: number;
   conditions: string[];
   next_step_names: string[];
   character_script: string;
@@ -21,11 +20,11 @@ export type StateLogEntry = {
 export type SessionState = {
   scenario_name: string;
   current_step_name: string;
-  current_visit_count: number;
   is_terminal: boolean;
   profile_url: string;
   picture_url: string;
-  voice_url: string;
+  scripts: string[];
+  voice_urls: string[];
   dialog: DialogEntry[];
   state_log: StateLogEntry[];
 };

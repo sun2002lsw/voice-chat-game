@@ -6,8 +6,8 @@ import styles from "./AudioPlayer.module.css";
 type Props = {
   voiceUrl: string;
   stepKey: string;
-  visitCount: number;
   audioKey: number;
+  onEnded?: () => void;
 };
 
 function formatTime(seconds: number): string {
@@ -18,10 +18,9 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ voiceUrl, stepKey, visitCount, audioKey }: Props) {
-  const src =
-    `${voiceUrl}?step=${encodeURIComponent(stepKey)}&v=${visitCount}`;
-  const cacheKey = `${stepKey}#${visitCount}#${audioKey}`;
+export function AudioPlayer({ voiceUrl, stepKey, audioKey, onEnded }: Props) {
+  const src = `${voiceUrl}?step=${encodeURIComponent(stepKey)}&k=${audioKey}`;
+  const cacheKey = `${stepKey}#${audioKey}`;
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -33,7 +32,7 @@ export function AudioPlayer({ voiceUrl, stepKey, visitCount, audioKey }: Props) 
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [stepKey, visitCount, audioKey]);
+  }, [stepKey, audioKey]);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -71,7 +70,10 @@ export function AudioPlayer({ voiceUrl, stepKey, visitCount, audioKey }: Props) 
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-        onEnded={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          onEnded?.();
+        }}
       />
       <button
         type="button"

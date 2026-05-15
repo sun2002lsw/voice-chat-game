@@ -114,7 +114,8 @@ def test_post_new_returns_initial_state(client: TestClient):
     assert body["current_step_name"] == "1. 인사"
     assert body["is_terminal"] is False
     assert body["picture_url"] == "/api/scenarios/test_cafe/picture"
-    assert body["voice_url"] == "/api/scenarios/test_cafe/voice"
+    assert body["voice_urls"] == ["/api/scenarios/test_cafe/voice/0"]
+    assert body["scripts"] == ["어서오세요"]
 
     assert len(body["dialog"]) == 1
     assert body["dialog"][0]["role"] == "character"
@@ -123,7 +124,6 @@ def test_post_new_returns_initial_state(client: TestClient):
     assert len(body["state_log"]) == 1
     first_entry = body["state_log"][0]
     assert first_entry["step_name"] == "1. 인사"
-    assert first_entry["visit_count"] == 1
     assert first_entry["conditions"] == ["주문"]
     assert first_entry["next_step_names"] == ["2. 결제"]
     assert first_entry["character_script"] == "어서오세요"
@@ -189,7 +189,7 @@ def test_get_picture_returns_image(client: TestClient):
 def test_get_voice_returns_audio_bytes(client: TestClient):
     client.post("/api/scenarios/test_cafe/new")
 
-    response = client.get("/api/scenarios/test_cafe/voice")
+    response = client.get("/api/scenarios/test_cafe/voice/0")
 
     assert response.status_code == 200
     assert len(response.content) > 0
@@ -201,7 +201,7 @@ def test_get_picture_returns_404_when_no_progress(client: TestClient):
 
 
 def test_get_voice_returns_404_when_no_progress(client: TestClient):
-    response = client.get("/api/scenarios/test_cafe/voice")
+    response = client.get("/api/scenarios/test_cafe/voice/0")
     assert response.status_code == 404
 
 

@@ -62,11 +62,13 @@ describe("Play", () => {
     const updatedState = {
       ...sampleState,
       current_step_name: "2. 결제",
+      scripts: ["결제 도와드릴게요"],
+      voice_urls: ["/api/scenarios/test_cafe/voice/0"],
       dialog: [
         ...sampleState.dialog,
         {
           role: "user" as const,
-          text: "주문할게요",
+          text: "0",
           created_at: "2026-05-03T14:01:00Z",
         },
         {

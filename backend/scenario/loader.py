@@ -3,7 +3,6 @@ from typing import Any
 
 import yaml
 
-from .common import VisitOverflow
 from .scenario import Scenario
 from .step import Step
 
@@ -20,7 +19,6 @@ _REQUIRED_STEP_KEYS = (
     "complete_conditions",
     "next_steps",
 )
-_REQUIRED_OVERFLOW_KEYS = ("after", "next_step")
 
 
 def find_image(folder: Path, *, label: str) -> Path:
@@ -95,11 +93,6 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
 
     picture_path = find_image(step_dir, label=f"step '{step_name}'")
     complete_conditions, next_step_names = _build_transition_lists(entry)
-    visit_overflow = _build_visit_overflow(
-        entry,
-        step_name=step_name,
-        script_count=script_count,
-    )
 
     return Step(
         name=step_name,
@@ -110,7 +103,6 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
         complete_conditions=complete_conditions,
         next_step_names=next_step_names,
         script_count=script_count,
-        visit_overflow=visit_overflow,
     )
 
 
@@ -133,52 +125,6 @@ def _build_transition_lists(
         raise ValueError(msg)
 
     return list(conditions), list(next_steps)
-
-
-def _build_visit_overflow(
-    entry: dict[str, Any],
-    *,
-    step_name: str,
-    script_count: int,
-) -> VisitOverflow | None:
-    raw = entry.get("visit_overflow")
-    if raw is None:
-        return None
-
-    if not isinstance(raw, dict):
-        msg = f"step '{step_name}'의 visit_overflow는 매핑이어야 합니다"
-        raise TypeError(msg)
-
-    for key in _REQUIRED_OVERFLOW_KEYS:
-        if key not in raw:
-            msg = f"step '{step_name}'의 visit_overflow에 '{key}' 키가 없습니다"
-            raise ValueError(msg)
-
-    after = raw["after"]
-    next_step = raw["next_step"]
-
-    if not isinstance(after, int) or isinstance(after, bool) or after < 1:
-        msg = (
-            f"step '{step_name}'의 visit_overflow.after는 1 이상의 정수여야 합니다 "
-            f"(현재: {after!r})"
-        )
-        raise ValueError(msg)
-
-    if after > script_count:
-        msg = (
-            f"step '{step_name}'의 visit_overflow.after({after})가 "
-            f"script 파일 개수({script_count})보다 큽니다"
-        )
-        raise ValueError(msg)
-
-    if next_step == step_name:
-        msg = (
-            f"step '{step_name}'의 visit_overflow.next_step이 "
-            f"자기 자신을 참조합니다"
-        )
-        raise ValueError(msg)
-
-    return VisitOverflow(after=after, next_step=next_step)
 
 
 def _validate_step_entry(entry: dict[str, Any]) -> None:
@@ -278,9 +224,3 @@ def _validate_scenario_consistency(steps: list[Step]) -> None:
                     f"존재하지 않는 step '{next_name}'을 참조합니다"
                 )
                 raise ValueError(msg)
-        if s.visit_overflow and s.visit_overflow.next_step not in valid:
-            msg = (
-                f"step '{s.name}'의 visit_overflow.next_step이 "
-                f"존재하지 않는 step '{s.visit_overflow.next_step}'을 참조합니다"
-            )
-            raise ValueError(msg)

@@ -21,7 +21,7 @@ export function Play() {
   const [state, setState] = useState<SessionState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingUserText, setPendingUserText] = useState<string | null>(null);
-  const [audioKey, setAudioKey] = useState(0);
+  const [cycleIndex, setCycleIndex] = useState(0);
   const [centerWidth, setCenterWidth] = useState<number | null>(null);
   const [pictureHeight, setPictureHeight] = useState<number | null>(null);
   const navigate = useNavigate();
@@ -38,9 +38,6 @@ export function Play() {
     const layoutH = layout.clientHeight;
     const layoutW = layout.clientWidth;
 
-    // Audio's natural (un-grown) height is the AudioPlayer content height
-    // — read from its first child, since the wrapper itself may already be
-    // expanded by a previous layout pass.
     const playerEl = audioRef.current?.firstElementChild as
       | HTMLElement
       | undefined;
@@ -98,6 +95,11 @@ export function Play() {
     };
   }, [name, navigate]);
 
+  // 스텝이 바뀌면 사이클 인덱스 리셋
+  useEffect(() => {
+    setCycleIndex(0);
+  }, [state?.current_step_name]);
+
   const alert = errorMessage !== null && (
     <div role="alert" className={styles.alert}>
       <span>{errorMessage}</span>
@@ -115,6 +117,11 @@ export function Play() {
     return alert || null;
   }
 
+  function handleAudioEnded() {
+    if (state === null) return;
+    setCycleIndex((i) => (i + 1) % state.voice_urls.length);
+  }
+
   async function handleSubmit(text: string) {
     if (name === undefined) return;
     if (pendingUserText !== null) return;
@@ -126,7 +133,6 @@ export function Play() {
     try {
       const newState = await submitInput(name, index);
       setState(newState);
-      setAudioKey((k) => k + 1);
     } catch {
       setErrorMessage("전송에 실패했습니다.");
     } finally {
@@ -135,16 +141,30 @@ export function Play() {
   }
 
   const isPending = pendingUserText !== null;
+
+  // 현재 사이클 스크립트로 마지막 캐릭터 대화를 업데이트
+  const currentScript = state.scripts[cycleIndex % state.scripts.length];
+  const cycledDialog: DialogEntry[] = (() => {
+    const base = [...state.dialog];
+    for (let i = base.length - 1; i >= 0; i--) {
+      if (base[i].role === "character") {
+        base[i] = { ...base[i], text: currentScript };
+        break;
+      }
+    }
+    return base;
+  })();
+
   const dialog: DialogEntry[] = isPending
     ? [
-        ...state.dialog,
+        ...cycledDialog,
         {
           role: "user",
           text: pendingUserText,
           created_at: new Date().toISOString(),
         },
       ]
-    : state.dialog;
+    : cycledDialog;
 
   const layoutStyle =
     centerWidth !== null
@@ -170,16 +190,15 @@ export function Play() {
           <PicturePanel
             pictureUrl={state.picture_url}
             stepKey={state.current_step_name}
-            visitCount={state.current_visit_count}
             onAspectChange={handleAspectChange}
           />
         </div>
         <div className={styles.audio} ref={audioRef}>
           <AudioPlayer
-            voiceUrl={state.voice_url}
+            voiceUrl={state.voice_urls[cycleIndex % state.voice_urls.length]}
             stepKey={state.current_step_name}
-            visitCount={state.current_visit_count}
-            audioKey={audioKey}
+            audioKey={cycleIndex}
+            onEnded={handleAudioEnded}
           />
         </div>
       </section>

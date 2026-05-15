@@ -11,11 +11,11 @@ export const sampleScenario: ScenarioSummary = {
 export const sampleState: SessionState = {
   scenario_name: "test_cafe",
   current_step_name: "1. 인사",
-  current_visit_count: 1,
   is_terminal: false,
   profile_url: "/api/scenarios/test_cafe/profile",
   picture_url: "/api/scenarios/test_cafe/picture",
-  voice_url: "/api/scenarios/test_cafe/voice",
+  scripts: ["어서오세요"],
+  voice_urls: ["/api/scenarios/test_cafe/voice/0"],
   dialog: [
     {
       role: "character",
@@ -26,7 +26,6 @@ export const sampleState: SessionState = {
   state_log: [
     {
       step_name: "1. 인사",
-      visit_count: 1,
       conditions: ["주문"],
       next_step_names: ["2. 결제"],
       character_script: "어서오세요",

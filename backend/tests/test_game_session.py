@@ -115,7 +115,6 @@ def test_start_new_records_first_dialog_and_state_log_entry(
     assert len(state.state_log) == 1
     first = state.state_log[0]
     assert first.step_name == "1. 인사"
-    assert first.visit_count == 1
     assert first.conditions == ["주문"]
     assert first.next_step_names == ["2. 결제"]
     assert first.character_script == "어서오세요"
@@ -165,7 +164,6 @@ def test_submit_input_completes_first_entry_and_starts_next(
 
     completed = state.state_log[0]
     assert completed.step_name == "1. 인사"
-    assert completed.visit_count == 1
     assert completed.conditions == ["주문"]
     assert completed.next_step_names == ["2. 결제"]
     assert completed.character_script == "어서오세요"
@@ -173,7 +171,6 @@ def test_submit_input_completes_first_entry_and_starts_next(
 
     started = state.state_log[1]
     assert started.step_name == "2. 결제"
-    assert started.visit_count == 1
     assert started.conditions == []
     assert started.next_step_names == []
     assert started.character_script == "결제 도와드릴게요"
@@ -192,9 +189,24 @@ def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
     assert state.dialog[-2].role == "user"
     assert state.dialog[-2].text == "0"
     assert state.dialog[-1].role == "character"
-    assert state.dialog[-1].text == "결제 두 번째 안내"
+    assert state.dialog[-1].text == "결제 도와드릴게요"
     assert state.current_step_name == "2. 결제"
-    assert state.current_visit_count == 2
+
+
+def test_session_state_provides_all_scripts_for_step(game_session: GameSession):
+    game_session.start_new("test_cafe")
+    state = game_session.submit_input("test_cafe", 0)
+
+    # "2. 결제" has 2 scripts
+    assert state.scripts == ["결제 도와드릴게요", "결제 두 번째 안내"]
+    assert len(state.voice_paths) == 2
+
+
+def test_session_state_provides_single_script_for_first_step(game_session: GameSession):
+    state = game_session.start_new("test_cafe")
+
+    assert state.scripts == ["어서오세요"]
+    assert len(state.voice_paths) == 1
 
 
 def test_get_state_returns_none_when_no_progress(game_session: GameSession):

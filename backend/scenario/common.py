@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+
 @dataclass(frozen=True)
 class StepOutput:
     picture: Path
@@ -12,9 +13,3 @@ class StepOutput:
 class ScenarioInfo:
     name: str
     picture: Path
-
-
-@dataclass(frozen=True)
-class VisitOverflow:
-    after: int
-    next_step: str

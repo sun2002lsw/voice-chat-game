@@ -36,10 +36,6 @@ function Block({ entry }: { entry: StateLogEntry }) {
         <span className={styles.value}>{entry.step_name}</span>
       </div>
       <div className={styles.field}>
-        <span className={styles.label}>방문 횟수</span>
-        <span className={styles.value}>{entry.visit_count}</span>
-      </div>
-      <div className={styles.field}>
         <span className={styles.label}>완료 조건</span>
         <ul className={styles.list}>
           {entry.conditions.map((c, i) => (

@@ -13,7 +13,6 @@ class DialogEntry:
 @dataclass(frozen=True)
 class StateLogEntry:
     step_name: str
-    visit_count: int
     conditions: list[str]
     next_step_names: list[str]
     character_script: str
@@ -30,10 +29,10 @@ class ScenarioSummary:
 class SessionState:
     scenario_name: str
     current_step_name: str
-    current_visit_count: int
     is_terminal: bool
     picture_path: Path
-    voice_path: Path
+    scripts: list[str]
+    voice_paths: list[Path]
     profile_path: Path
     dialog: list[DialogEntry]
     state_log: list[StateLogEntry]

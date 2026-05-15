@@ -17,20 +17,18 @@ class _FakeStep:
         self._next_step_name = next_step_name if next_step_name is not None else name
         self._selected_index = selected_index
         self.is_terminal = is_terminal
-        self.visit_count = 1
         self.last_index: int | None = None
 
     def invoke(self, index: int) -> tuple[str, int]:
         self.last_index = index
-        self.visit_count += 1
         return self._next_step_name, self._selected_index
 
-    def get_output(self) -> StepOutput:
-        return StepOutput(
+    def get_all_outputs(self) -> list[StepOutput]:
+        return [StepOutput(
             picture=Path(f"{self.name}/picture.png"),
             script=Path(f"{self.name}/script.txt"),
             voice=Path(f"{self.name}/voice.wav"),
-        )
+        )]
 
 
 def test_scenario_stores_name_from_argument():
@@ -84,7 +82,7 @@ def test_invoke_keeps_current_step_on_self_loop():
     assert scenario.current_step is only_step
 
 
-def test_get_output_delegates_to_current_step():
+def test_get_all_step_outputs_delegates_to_current_step():
     first_step = _FakeStep("step1", next_step_name="step2")
     second_step = _FakeStep("step2", next_step_name="step2")
 
@@ -92,13 +90,13 @@ def test_get_output_delegates_to_current_step():
         name="test", picture=Path("test.png"), steps=[first_step, second_step]
     )
 
-    initial_output = scenario.get_output()
-    assert initial_output.picture == Path("step1/picture.png")
+    initial_outputs = scenario.get_all_step_outputs()
+    assert initial_outputs[0].picture == Path("step1/picture.png")
 
     scenario.invoke(0)
-    output_after_transition = scenario.get_output()
+    outputs_after_transition = scenario.get_all_step_outputs()
 
-    assert output_after_transition.picture == Path("step2/picture.png")
+    assert outputs_after_transition[0].picture == Path("step2/picture.png")
 
 
 def test_invoke_returns_selected_index_from_step():
@@ -156,13 +154,14 @@ def test_reset_returns_to_first_step():
     assert scenario.current_step is first_step
 
 
-def test_reset_clears_visit_counts():
-    first_step = _FakeStep("step1", next_step_name="step1")
+def test_reset_returns_to_first_step_from_second():
+    first_step = _FakeStep("step1", next_step_name="step2")
+    second_step = _FakeStep("step2", next_step_name="step2")
 
-    scenario = Scenario(name="t", picture=Path("p.png"), steps=[first_step])
+    scenario = Scenario(name="t", picture=Path("p.png"), steps=[first_step, second_step])
     scenario.invoke(0)
-    assert first_step.visit_count == 2
+    assert scenario.current_step is second_step
 
     scenario.reset()
 
-    assert first_step.visit_count == 1
+    assert scenario.current_step is first_step

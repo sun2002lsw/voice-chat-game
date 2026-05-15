@@ -7,7 +7,6 @@ import { DebugPanel } from "./DebugPanel";
 
 const startEntry: StateLogEntry = {
   step_name: "1. 인사",
-  visit_count: 1,
   conditions: ["주문", "메뉴 질문"],
   next_step_names: ["2. 결제", "1. 안내"],
   character_script: "어서오세요",
@@ -38,7 +37,6 @@ describe("DebugPanel", () => {
 
     const block = screen.getByTestId("debug-block");
     expect(block).toHaveTextContent("1. 인사");
-    expect(block).toHaveTextContent("방문 횟수");
     expect(block).toHaveTextContent("주문");
     expect(block).toHaveTextContent("메뉴 질문");
     expect(block).toHaveTextContent("2. 결제");

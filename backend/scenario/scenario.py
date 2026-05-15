@@ -13,8 +13,6 @@ class Scenario:
         self.current_step = steps[0]
 
     def reset(self) -> None:
-        for step in self._steps_by_name.values():
-            step.visit_count = 1
         self.current_step = self._first_step
 
     @property
@@ -28,8 +26,7 @@ class Scenario:
     def invoke(self, index: int) -> int:
         next_step_name, selected = self.current_step.invoke(index)
         self.current_step = self._steps_by_name[next_step_name]
-
         return selected
 
-    def get_output(self) -> StepOutput:
-        return self.current_step.get_output()
+    def get_all_step_outputs(self) -> list[StepOutput]:
+        return self.current_step.get_all_outputs()

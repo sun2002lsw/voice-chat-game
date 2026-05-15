@@ -18,7 +18,6 @@ class DialogEntryDTO(BaseModel):
 
 class StateLogEntryDTO(BaseModel):
     step_name: str
-    visit_count: int
     conditions: list[str]
     next_step_names: list[str]
     character_script: str
@@ -28,11 +27,11 @@ class StateLogEntryDTO(BaseModel):
 class SessionStateDTO(BaseModel):
     scenario_name: str
     current_step_name: str
-    current_visit_count: int
     is_terminal: bool
     profile_url: str
     picture_url: str
-    voice_url: str
+    scripts: list[str]
+    voice_urls: list[str]
     dialog: list[DialogEntryDTO]
     state_log: list[StateLogEntryDTO]
 
@@ -44,34 +43,34 @@ class InputRequest(BaseModel):
 def to_session_state_dto(state: SessionState) -> SessionStateDTO:
     name = state.scenario_name
 
+    voice_urls = [
+        f"/api/scenarios/{name}/voice/{i}"
+        for i in range(len(state.voice_paths))
+    ]
+
     dialog_dtos = [
-        DialogEntryDTO(
-            role=entry.role,
-            text=entry.text,
-            created_at=entry.created_at,
-        )
-        for entry in state.dialog
+        DialogEntryDTO(role=e.role, text=e.text, created_at=e.created_at)
+        for e in state.dialog
     ]
     state_log_dtos = [
         StateLogEntryDTO(
-            step_name=entry.step_name,
-            visit_count=entry.visit_count,
-            conditions=entry.conditions,
-            next_step_names=entry.next_step_names,
-            character_script=entry.character_script,
-            selected_index=entry.selected_index,
+            step_name=e.step_name,
+            conditions=e.conditions,
+            next_step_names=e.next_step_names,
+            character_script=e.character_script,
+            selected_index=e.selected_index,
         )
-        for entry in state.state_log
+        for e in state.state_log
     ]
 
     return SessionStateDTO(
         scenario_name=state.scenario_name,
         current_step_name=state.current_step_name,
-        current_visit_count=state.current_visit_count,
         is_terminal=state.is_terminal,
         profile_url=f"/api/scenarios/{name}/profile",
         picture_url=f"/api/scenarios/{name}/picture",
-        voice_url=f"/api/scenarios/{name}/voice",
+        scripts=state.scripts,
+        voice_urls=voice_urls,
         dialog=dialog_dtos,
         state_log=state_log_dtos,
     )

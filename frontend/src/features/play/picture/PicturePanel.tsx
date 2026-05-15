@@ -5,18 +5,11 @@ import styles from "./PicturePanel.module.css";
 type Props = {
   pictureUrl: string;
   stepKey: string;
-  visitCount: number;
   onAspectChange?: (aspect: number) => void;
 };
 
-export function PicturePanel({
-  pictureUrl,
-  stepKey,
-  visitCount,
-  onAspectChange,
-}: Props) {
-  const src =
-    `${pictureUrl}?step=${encodeURIComponent(stepKey)}&v=${visitCount}`;
+export function PicturePanel({ pictureUrl, stepKey, onAspectChange }: Props) {
+  const src = `${pictureUrl}?step=${encodeURIComponent(stepKey)}`;
 
   function handleLoad(event: SyntheticEvent<HTMLImageElement>) {
     const img = event.currentTarget;

@@ -32,15 +32,15 @@ class GameSession:
         scenario.reset()
 
         first_step = scenario.current_step
-        first_output = scenario.get_output()
-        character_script = first_output.script.read_text(encoding="utf-8")
+        first_script = first_step.get_all_outputs()[0].script.read_text(encoding="utf-8")
 
         now = datetime.now(UTC)
-        first_dialog = DialogEntry(role="character", text=character_script, created_at=now)
-        first_state_entry = _state_entry_from_step(first_step, character_script)
-
-        self._dialog[scenario_name] = [first_dialog]
-        self._state_log[scenario_name] = [first_state_entry]
+        self._dialog[scenario_name] = [
+            DialogEntry(role="character", text=first_script, created_at=now)
+        ]
+        self._state_log[scenario_name] = [
+            _state_entry_from_step(first_step, first_script)
+        ]
 
         return self._build_session_state(scenario_name, scenario)
 
@@ -58,16 +58,13 @@ class GameSession:
         user_dialog = DialogEntry(role="user", text=str(index), created_at=now)
 
         new_step = scenario.current_step
-        new_character_script = scenario.get_output().script.read_text(encoding="utf-8")
-        new_character_dialog = DialogEntry(
-            role="character", text=new_character_script, created_at=now,
-        )
-        new_state_entry = _state_entry_from_step(new_step, new_character_script)
+        new_script = new_step.get_all_outputs()[0].script.read_text(encoding="utf-8")
+        new_character_dialog = DialogEntry(role="character", text=new_script, created_at=now)
 
         state_log = self._state_log[scenario_name]
         state_log[-1] = dataclasses.replace(state_log[-1], selected_index=selected_index)
         self._dialog[scenario_name].extend([user_dialog, new_character_dialog])
-        state_log.append(new_state_entry)
+        state_log.append(_state_entry_from_step(new_step, new_script))
 
         return self._build_session_state(scenario_name, scenario)
 
@@ -76,14 +73,16 @@ class GameSession:
         scenario_name: str,
         scenario: Scenario,
     ) -> SessionState:
-        output = scenario.get_output()
+        outputs = scenario.get_all_step_outputs()
+        scripts = [o.script.read_text(encoding="utf-8") for o in outputs]
+        voice_paths = [o.voice for o in outputs]
         return SessionState(
             scenario_name=scenario_name,
             current_step_name=scenario.current_step_name,
-            current_visit_count=scenario.current_step.visit_count,
             is_terminal=scenario.is_terminal,
-            picture_path=output.picture,
-            voice_path=output.voice,
+            picture_path=outputs[0].picture,
+            scripts=scripts,
+            voice_paths=voice_paths,
             profile_path=scenario.picture,
             dialog=list(self._dialog.get(scenario_name, [])),
             state_log=list(self._state_log.get(scenario_name, [])),
@@ -93,7 +92,6 @@ class GameSession:
 def _state_entry_from_step(step: Step, character_script: str) -> StateLogEntry:
     return StateLogEntry(
         step_name=step.name,
-        visit_count=step.visit_count,
         conditions=step.conditions,
         next_step_names=step.next_step_names,
         character_script=character_script,

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from .common import StepOutput, VisitOverflow
+from .common import StepOutput
 
 
 class Step:
@@ -14,7 +14,6 @@ class Step:
         complete_conditions: list[str],
         next_step_names: list[str],
         script_count: int,
-        visit_overflow: VisitOverflow | None = None,
     ) -> None:
         self.name = name
         self.scene = scene
@@ -24,8 +23,6 @@ class Step:
         self.complete_conditions = complete_conditions
         self.next_step_names = next_step_names
         self.script_count = script_count
-        self.visit_overflow = visit_overflow
-        self.visit_count = 1
 
     @property
     def is_terminal(self) -> bool:
@@ -42,28 +39,14 @@ class Step:
             selected = index if 0 <= index <= last else last
         else:
             selected = 0
+        return names[selected] if names else self.name, selected
 
-        overflow_target = self._visit_overflow_target()
-        if overflow_target is not None:
-            next_step_name = overflow_target
-        elif names:
-            next_step_name = names[selected]
-        else:
-            next_step_name = self.name
-
-        self.visit_count = min(self.visit_count + 1, self.script_count)
-        return next_step_name, selected
-
-    def get_output(self) -> StepOutput:
-        return StepOutput(
-            picture=self.picture,
-            script=self.step_dir / "script" / f"{self.visit_count}.txt",
-            voice=self.step_dir / "voice" / f"{self.visit_count}.wav",
-        )
-
-    def _visit_overflow_target(self) -> str | None:
-        if self.visit_overflow is None:
-            return None
-        if self.visit_count < self.visit_overflow.after:
-            return None
-        return self.visit_overflow.next_step
+    def get_all_outputs(self) -> list[StepOutput]:
+        return [
+            StepOutput(
+                picture=self.picture,
+                script=self.step_dir / "script" / f"{i}.txt",
+                voice=self.step_dir / "voice" / f"{i}.wav",
+            )
+            for i in range(1, self.script_count + 1)
+        ]
