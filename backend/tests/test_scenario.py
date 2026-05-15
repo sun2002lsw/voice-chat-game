@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from datastore.model import ScenarioSnapshot
 from scenario.common import StepOutput
 from scenario.scenario import Scenario
 
@@ -151,22 +150,6 @@ def test_current_step_name_reflects_transitions():
     assert scenario.current_step_name == "step2"
 
 
-def test_snapshot_captures_current_step_name_and_visit_counts():
-    first_step = _FakeStep("step1", next_step_name="step2")
-    second_step = _FakeStep("step2", next_step_name="step2")
-
-    scenario = Scenario(
-        name="test", picture=Path("p.png"), steps=[first_step, second_step]
-    )
-    scenario.invoke("input1")
-    scenario.invoke("input2")
-
-    snapshot = scenario.snapshot()
-
-    assert snapshot.current_step_name == "step2"
-    assert snapshot.step_visits == {"step1": 2, "step2": 2}
-
-
 def test_reset_returns_to_first_step():
     first_step = _FakeStep("step1", next_step_name="step2")
     second_step = _FakeStep("step2", next_step_name="step2")
@@ -194,40 +177,3 @@ def test_reset_clears_visit_counts():
     assert first_step.visit_count == 1
 
 
-def test_restore_sets_current_step_and_visit_counts_from_snapshot():
-    first_step = _FakeStep("step1", next_step_name="step2")
-    second_step = _FakeStep("step2", next_step_name="step2")
-
-    scenario = Scenario(
-        name="test", picture=Path("p.png"), steps=[first_step, second_step]
-    )
-
-    snapshot = ScenarioSnapshot(
-        current_step_name="step2",
-        step_visits={"step1": 5, "step2": 3},
-    )
-    scenario.restore(snapshot)
-
-    assert scenario.current_step is second_step
-    assert first_step.visit_count == 5
-    assert second_step.visit_count == 3
-
-
-def test_restore_updates_current_step_name_and_is_terminal():
-    first_step = _FakeStep("step1", next_step_name="step2")
-    second_step = _FakeStep("step2", next_step_name="step2", is_terminal=True)
-
-    scenario = Scenario(
-        name="t", picture=Path("p.png"), steps=[first_step, second_step]
-    )
-    assert scenario.current_step_name == "step1"
-    assert scenario.is_terminal is False
-
-    snapshot = ScenarioSnapshot(
-        current_step_name="step2",
-        step_visits={"step1": 1, "step2": 1},
-    )
-    scenario.restore(snapshot)
-
-    assert scenario.current_step_name == "step2"
-    assert scenario.is_terminal is True

@@ -90,12 +90,11 @@ def reset_singletons_and_llm(monkeypatch):
 
 @pytest.fixture
 def client(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ) -> TestClient:
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    app = build_app(db_path=tmp_path / "game.db")
+    app = build_app()
     return TestClient(app)
 
 
@@ -245,7 +244,6 @@ def test_post_advance_returns_409_when_step_is_not_auto_advance(
 
 
 def test_post_advance_progresses_step_without_user_dialog(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ):
@@ -276,7 +274,7 @@ def test_post_advance_progresses_step_without_user_dialog(
     _make_step_dir(chat_dir, "2. 끝", script_text="끝")
 
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    app = build_app(db_path=tmp_path / "game.db")
+    app = build_app()
     client = TestClient(app)
 
     new_response = client.post("/api/scenarios/test_chat/new")
@@ -303,7 +301,6 @@ def test_post_new_includes_is_auto_advance(client: TestClient):
 
 
 def test_get_picture_reflects_current_step_after_transition(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ):
@@ -312,7 +309,7 @@ def test_get_picture_reflects_current_step_after_transition(
     (payment_step_dir / "picture.png").write_bytes(distinct_payment_picture)
 
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    app = build_app(db_path=tmp_path / "game.db")
+    app = build_app()
     client = TestClient(app)
 
     client.post("/api/scenarios/test_cafe/new")
@@ -341,31 +338,3 @@ def test_post_input_marks_is_terminal_true_at_terminal_step(client: TestClient):
     assert body["is_terminal"] is True
 
 
-def test_state_persists_across_app_rebuild(
-    tmp_path: Path,
-    scenarios_root: Path,
-    monkeypatch,
-):
-    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    db_path = tmp_path / "game.db"
-
-    Singleton._instances.pop(ScenarioManager, None)
-    first_app = build_app(db_path=db_path)
-    first_client = TestClient(first_app)
-    first_client.post("/api/scenarios/test_cafe/new")
-    first_client.post(
-        "/api/scenarios/test_cafe/input",
-        json={"text": "주문할게요"},
-    )
-
-    Singleton._instances.pop(ScenarioManager, None)
-    second_app = build_app(db_path=db_path)
-    second_client = TestClient(second_app)
-
-    response = second_client.get("/api/scenarios/test_cafe/state")
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["current_step_name"] == "2. 결제"
-    assert len(body["dialog"]) == 3
-    assert len(body["state_log"]) == 2

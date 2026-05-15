@@ -4,7 +4,6 @@ from typing import Any
 import pytest
 import yaml
 
-from datastore.sqlite import Sqlite
 from game_session.model import ScenarioSummary
 from game_session.session import GameSession
 from scenario.manager import ScenarioManager
@@ -99,15 +98,11 @@ def reset_singletons_and_llm(monkeypatch):
 
 @pytest.fixture
 def game_session(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ) -> GameSession:
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
-    datastore = Sqlite(db_path=tmp_path / "game.db")
-    datastore.init_schema()
-    manager = ScenarioManager()
-    return GameSession(datastore=datastore, scenario_manager=manager)
+    return GameSession(scenario_manager=ScenarioManager())
 
 
 def test_list_scenarios_returns_all_scenarios(
@@ -227,33 +222,6 @@ def test_submit_input_appends_new_visit_character_dialog_on_self_loop(
     assert state.current_visit_count == 2
 
 
-def test_resume_returns_none_when_no_progress(game_session: GameSession):
-    assert game_session.resume("test_cafe") is None
-
-
-def test_resume_restores_state_through_fresh_manager_and_datastore(
-    tmp_path: Path,
-    game_session: GameSession,
-):
-    _FakeLLM.next_index = 0
-    game_session.start_new("test_cafe")
-    game_session.submit_input("test_cafe", "주문할게요")
-
-    Singleton._instances.pop(ScenarioManager, None)
-    fresh_manager = ScenarioManager()
-    fresh_datastore = Sqlite(db_path=tmp_path / "game.db")
-    fresh_session = GameSession(
-        datastore=fresh_datastore, scenario_manager=fresh_manager,
-    )
-
-    state = fresh_session.resume("test_cafe")
-
-    assert state is not None
-    assert state.current_step_name == "2. 결제"
-    assert len(state.dialog) == 3
-    assert len(state.state_log) == 2
-
-
 def test_get_state_returns_none_when_no_progress(game_session: GameSession):
     assert game_session.get_state("test_cafe") is None
 
@@ -288,28 +256,7 @@ def test_submit_input_marks_is_terminal_true_at_terminal_step(
     assert state.is_terminal is True
 
 
-def test_resume_preserves_is_terminal(
-    tmp_path: Path,
-    game_session: GameSession,
-):
-    _FakeLLM.next_index = 0
-    game_session.start_new("test_cafe")
-    game_session.submit_input("test_cafe", "주문할게요")
-
-    Singleton._instances.pop(ScenarioManager, None)
-    fresh_manager = ScenarioManager()
-    fresh_datastore = Sqlite(db_path=tmp_path / "game.db")
-    fresh_session = GameSession(
-        datastore=fresh_datastore, scenario_manager=fresh_manager,
-    )
-
-    state = fresh_session.resume("test_cafe")
-    assert state is not None
-    assert state.is_terminal is True
-
-
 def _build_chat_session(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ) -> GameSession:
@@ -349,17 +296,14 @@ def _build_chat_session(
 
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", scenarios_root)
     Singleton._instances.pop(ScenarioManager, None)
-    datastore = Sqlite(db_path=tmp_path / "game.db")
-    datastore.init_schema()
-    return GameSession(datastore=datastore, scenario_manager=ScenarioManager())
+    return GameSession(scenario_manager=ScenarioManager())
 
 
 def test_session_state_exposes_is_auto_advance_true(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ):
-    session = _build_chat_session(tmp_path, scenarios_root, monkeypatch)
+    session = _build_chat_session(scenarios_root, monkeypatch)
 
     state = session.start_new("test_chat")
 
@@ -388,11 +332,10 @@ def test_session_state_is_auto_advance_false_for_branching_step(
 
 
 def test_auto_advance_transitions_without_user_dialog(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ):
-    session = _build_chat_session(tmp_path, scenarios_root, monkeypatch)
+    session = _build_chat_session(scenarios_root, monkeypatch)
     session.start_new("test_chat")
 
     state = session.auto_advance("test_chat")
@@ -404,11 +347,10 @@ def test_auto_advance_transitions_without_user_dialog(
 
 
 def test_auto_advance_completes_state_log_with_empty_user_input(
-    tmp_path: Path,
     scenarios_root: Path,
     monkeypatch,
 ):
-    session = _build_chat_session(tmp_path, scenarios_root, monkeypatch)
+    session = _build_chat_session(scenarios_root, monkeypatch)
     session.start_new("test_chat")
 
     state = session.auto_advance("test_chat")

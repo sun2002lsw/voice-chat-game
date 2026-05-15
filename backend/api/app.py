@@ -1,20 +1,13 @@
-from pathlib import Path
-
 from fastapi import FastAPI
 
 from api import route
-from datastore.sqlite import Sqlite
 from game_session.session import GameSession
 from scenario.manager import ScenarioManager
 
 
-def build_app(db_path: Path) -> FastAPI:
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    datastore = Sqlite(db_path=db_path)
-    datastore.init_schema()
+def build_app() -> FastAPI:
     manager = ScenarioManager()
-    game_session = GameSession(datastore=datastore, scenario_manager=manager)
+    game_session = GameSession(scenario_manager=manager)
 
     app = FastAPI(title="voice-chat-game")
     app.state.game_session = game_session

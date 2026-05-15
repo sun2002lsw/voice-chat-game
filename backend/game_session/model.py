@@ -1,7 +1,24 @@
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
-from datastore.model import DialogEntry, StateLogEntry
+
+@dataclass(frozen=True)
+class DialogEntry:
+    role: str
+    text: str
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class StateLogEntry:
+    step_name: str
+    visit_count: int
+    conditions: list[str]
+    next_step_names: list[str]
+    character_script: str
+    user_input: str
+    llm_index: int | None
 
 
 @dataclass(frozen=True)

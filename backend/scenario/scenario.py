@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from datastore.model import ScenarioSnapshot
-
 from .common import StepOutput
 from .step import Step
 
@@ -39,18 +37,3 @@ class Scenario:
 
     def get_output(self) -> StepOutput:
         return self.current_step.get_output()
-
-    def snapshot(self) -> ScenarioSnapshot:
-        step_visits = {
-            name: step.visit_count
-            for name, step in self._steps_by_name.items()
-        }
-        return ScenarioSnapshot(
-            current_step_name=self.current_step.name,
-            step_visits=step_visits,
-        )
-
-    def restore(self, snapshot: ScenarioSnapshot) -> None:
-        for name, visit_count in snapshot.step_visits.items():
-            self._steps_by_name[name].visit_count = visit_count
-        self.current_step = self._steps_by_name[snapshot.current_step_name]
