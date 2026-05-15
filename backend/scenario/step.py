@@ -14,6 +14,7 @@ class Step:
         complete_conditions: list[str],
         next_step_names: list[str],
         script_count: int,
+        loop: bool = False,
     ) -> None:
         self.name = name
         self.tone = tone
@@ -23,6 +24,7 @@ class Step:
         self.complete_conditions = complete_conditions
         self.next_step_names = next_step_names
         self.script_count = script_count
+        self.loop = loop
 
     @property
     def is_terminal(self) -> bool:

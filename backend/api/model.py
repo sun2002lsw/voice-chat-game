@@ -10,6 +10,7 @@ class ScenarioSummaryDTO(BaseModel):
 class StepDTO(BaseModel):
     step_name: str
     is_terminal: bool
+    loop: bool
     picture_url: str
     scripts: list[str]
     voice_urls: list[str]

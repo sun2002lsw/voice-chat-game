@@ -12,6 +12,7 @@ export const sampleScenario: ScenarioSummary = {
 export const sampleStep: StepInfo = {
   step_name: "1. 인사",
   is_terminal: false,
+  loop: false,
   picture_url: "/api/scenarios/test_cafe/steps/1.%20%EC%9D%B8%EC%82%AC/picture",
   scripts: ["어서오세요"],
   voice_urls: ["/api/scenarios/test_cafe/steps/1.%20%EC%9D%B8%EC%82%AC/voice/0"],

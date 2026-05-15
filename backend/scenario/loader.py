@@ -16,6 +16,7 @@ _REQUIRED_STEP_KEYS = (
     "step",
     "tone",
     "character",
+    "loop",
     "complete_conditions",
     "next_steps",
 )
@@ -103,6 +104,7 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
         complete_conditions=complete_conditions,
         next_step_names=next_step_names,
         script_count=script_count,
+        loop=entry["loop"],
     )
 
 

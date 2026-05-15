@@ -7,6 +7,7 @@ export type ScenarioSummary = {
 export type StepInfo = {
   step_name: string;
   is_terminal: boolean;
+  loop: boolean;
   picture_url: string;
   scripts: string[];
   voice_urls: string[];

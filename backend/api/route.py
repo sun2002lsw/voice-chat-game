@@ -41,6 +41,7 @@ def get_step(name: str, step_name: str) -> StepDTO:
     return StepDTO(
         step_name=step.name,
         is_terminal=step.is_terminal,
+        loop=step.loop,
         picture_url=f"{base}/picture",
         scripts=[o.script.read_text(encoding="utf-8") for o in outputs],
         voice_urls=[f"{base}/voice/{i}" for i in range(len(outputs))],

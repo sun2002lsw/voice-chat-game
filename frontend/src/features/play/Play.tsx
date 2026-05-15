@@ -124,7 +124,11 @@ export function Play() {
 
   function handleAudioEnded() {
     if (stepInfo === null) return;
-    setCycleIndex((i) => (i + 1) % stepInfo.voice_urls.length);
+    if (stepInfo.loop) {
+      setCycleIndex((i) => (i + 1) % stepInfo.voice_urls.length);
+    } else {
+      setCycleIndex((i) => Math.min(i + 1, stepInfo.voice_urls.length - 1));
+    }
   }
 
   if (stepInfo === null) {
