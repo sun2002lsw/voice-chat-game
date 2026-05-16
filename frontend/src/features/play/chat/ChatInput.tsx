@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 
 import styles from "./ChatInput.module.css";
-import { useSpeechRecognition } from "./useSpeechRecognition";
 
 type Props = {
   onSubmit: (text: string) => void;
@@ -13,13 +12,6 @@ type Props = {
 export function ChatInput({ onSubmit, disabled, submitDisabled }: Props) {
   const [text, setText] = useState("");
   const cannotSubmit = disabled || submitDisabled;
-
-  const handleFinalText = useCallback((chunk: string) => {
-    setText((prev) => (prev ? `${prev} ${chunk}` : chunk));
-  }, []);
-
-  const { isSupported: micSupported, isListening, start, stop } =
-    useSpeechRecognition({ onFinalText: handleFinalText });
 
   const onSubmitRef = useRef(onSubmit);
   useEffect(() => {
@@ -59,14 +51,6 @@ export function ChatInput({ onSubmit, disabled, submitDisabled }: Props) {
     submit();
   }
 
-  function toggleMic() {
-    if (isListening) {
-      stop();
-    } else {
-      start();
-    }
-  }
-
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <textarea
@@ -78,17 +62,6 @@ export function ChatInput({ onSubmit, disabled, submitDisabled }: Props) {
         placeholder="메시지를 입력하세요 (Shift+Enter 줄바꿈)"
         rows={2}
       />
-      {micSupported && (
-        <button
-          type="button"
-          className={`${styles.micButton} ${isListening ? styles.micButtonActive : ""}`}
-          onClick={toggleMic}
-          aria-label={isListening ? "음성 인식 중지" : "음성 인식 시작"}
-          aria-pressed={isListening}
-        >
-          {isListening ? "● 듣는 중" : "🎤"}
-        </button>
-      )}
       <button
         type="submit"
         className={styles.sendButton}

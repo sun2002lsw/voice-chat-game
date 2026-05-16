@@ -37,36 +37,3 @@
   background: #aaa;
   cursor: not-allowed;
 }
-
-.micButton {
-  padding: 0.5rem 0.75rem;
-  background: #f4f4f4;
-  color: #333;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  cursor: pointer;
-  font: inherit;
-  min-width: 3rem;
-}
-
-.micButton:disabled {
-  background: #f0f0f0;
-  color: #aaa;
-  cursor: not-allowed;
-}
-
-.micButtonActive {
-  background: #e74c3c;
-  color: white;
-  border-color: #c0392b;
-  animation: micPulse 1.2s ease-in-out infinite;
-}
-
-@keyframes micPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(231, 76, 60, 0);
-  }
-}
