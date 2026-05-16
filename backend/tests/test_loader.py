@@ -77,7 +77,7 @@ def _basic_graph(name: str) -> dict[str, Any]:
                 "character": "Zephyr_smile",
                 "loop": False,
                 "complete_conditions": [],
-                "next_steps": [],
+                "next_steps": ["2. ask"],
             },
         ],
     }
@@ -193,7 +193,7 @@ def test_load_scenario_raises_when_step_names_duplicate(scenarios_root):
                 "character": "Zephyr_smile",
                 "loop": False,
                 "complete_conditions": [],
-                "next_steps": [],
+                "next_steps": ["1. greet"],
             },
         ],
     }

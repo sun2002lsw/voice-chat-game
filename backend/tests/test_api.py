@@ -56,7 +56,7 @@ def scenarios_root(tmp_path: Path) -> Path:
                 "character": "Zephyr",
                 "loop": False,
                 "complete_conditions": [],
-                "next_steps": [],
+                "next_steps": ["2. 결제"],
             },
         ],
     }
@@ -109,14 +109,6 @@ def test_get_step_returns_step_data(client: TestClient):
     assert len(body["voice_urls"]) == 1
     assert body["conditions"] == ["주문"]
     assert body["next_step_names"] == ["2. 결제"]
-
-
-def test_get_step_terminal(client: TestClient):
-    step_name = quote("2. 결제")
-    body = client.get(f"/api/scenarios/test_cafe/steps/{step_name}").json()
-
-    assert body["is_terminal"] is True
-    assert body["next_step_names"] == []
 
 
 def test_get_step_404_for_unknown(client: TestClient):

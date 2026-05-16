@@ -54,7 +54,7 @@ def _build_minimal_scenario(root: Path, scenario_name: str = "test") -> Path:
                 "character": "X",
                 "loop": False,
                 "complete_conditions": [],
-                "next_steps": [],
+                "next_steps": ["step1"],
             },
         ],
     }
@@ -90,7 +90,7 @@ def scenarios_root(tmp_path: Path) -> Path:
                 "character": "Zephyr",
                 "loop": False,
                 "complete_conditions": [],
-                "next_steps": [],
+                "next_steps": ["2. 결제"],
             },
         ],
     }
@@ -121,7 +121,7 @@ def test_init_eagerly_loads_multiple_scenarios(scenarios_root, monkeypatch):
                 "character": "Interviewer",
                 "loop": False,
                 "complete_conditions": [],
-                "next_steps": [],
+                "next_steps": ["1. 시작"],
             },
         ],
     }

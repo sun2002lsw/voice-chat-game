@@ -143,10 +143,10 @@ def _validate_step_entry(entry: dict[str, Any]) -> None:
         return
 
     next_step_count = len(entry["next_steps"])
-    if next_step_count > 1:
+    if next_step_count != 1:
         msg = (
             f"complete_conditions가 비어있는 step '{entry['step']}'은 "
-            f"next_steps가 0개 또는 1개여야 합니다. "
+            f"자동 진행을 위해 next_steps가 정확히 1개여야 합니다. "
             f"현재: {next_step_count}개"
         )
         raise ValueError(msg)
