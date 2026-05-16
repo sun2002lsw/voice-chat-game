@@ -54,7 +54,7 @@ describe("Play", () => {
     const nextStep = {
       ...sampleStep,
       step_name: "2. 결제",
-      scripts: ["결제 도와드릴게요"],
+      script: "결제 도와드릴게요",
       is_terminal: true,
       conditions: [],
       next_step_names: [],

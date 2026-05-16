@@ -12,22 +12,16 @@ def _write_step(
     steps_dir: Path,
     *,
     name: str,
-    script_count: int = 1,
-    voice_count: int | None = None,
+    skip_script: bool = False,
+    skip_voice: bool = False,
 ) -> None:
-    if voice_count is None:
-        voice_count = script_count
     step_dir = steps_dir / name
     step_dir.mkdir(parents=True)
     (step_dir / "picture.png").touch()
-    script_dir = step_dir / "script"
-    script_dir.mkdir()
-    for i in range(1, script_count + 1):
-        (script_dir / f"{i}.txt").write_text(f"line {i}", encoding="utf-8")
-    voice_dir = step_dir / "voice"
-    voice_dir.mkdir()
-    for i in range(1, voice_count + 1):
-        (voice_dir / f"{i}.wav").touch()
+    if not skip_script:
+        (step_dir / "script.txt").write_text("line 1", encoding="utf-8")
+    if not skip_voice:
+        (step_dir / "voice.wav").touch()
 
 
 def _write_scenario(
@@ -219,21 +213,35 @@ def test_load_scenario_raises_when_next_step_references_unknown(scenarios_root):
         load_scenario("hello")
 
 
-def test_load_scenario_raises_when_voice_count_differs_from_script_count(
-    scenarios_root,
-):
+def test_load_scenario_raises_when_voice_file_missing(scenarios_root):
     graph = _basic_graph("hello")
     _write_scenario(
         scenarios_root,
         name="hello",
         graph=graph,
         steps_setup=[
-            {"name": "1. greet", "script_count": 3, "voice_count": 2},
+            {"name": "1. greet", "skip_voice": True},
             {"name": "2. ask"},
         ],
     )
 
-    with pytest.raises(ValueError, match="파일 개수가 다릅니다"):
+    with pytest.raises(FileNotFoundError, match="voice.wav"):
+        load_scenario("hello")
+
+
+def test_load_scenario_raises_when_script_file_missing(scenarios_root):
+    graph = _basic_graph("hello")
+    _write_scenario(
+        scenarios_root,
+        name="hello",
+        graph=graph,
+        steps_setup=[
+            {"name": "1. greet", "skip_script": True},
+            {"name": "2. ask"},
+        ],
+    )
+
+    with pytest.raises(FileNotFoundError, match="script.txt"):
         load_scenario("hello")
 
 

@@ -28,10 +28,8 @@ def _make_step_dir(scenario_dir: Path, step_name: str) -> Path:
     step_dir = scenario_dir / "steps" / step_name
     step_dir.mkdir(parents=True)
     (step_dir / "picture.png").touch()
-    (step_dir / "script").mkdir()
-    (step_dir / "script" / "1.txt").write_text("x")
-    (step_dir / "voice").mkdir()
-    (step_dir / "voice" / "1.wav").touch()
+    (step_dir / "script.txt").write_text("x")
+    (step_dir / "voice.wav").touch()
     return step_dir
 
 
@@ -214,49 +212,25 @@ def test_init_raises_when_scenario_picture_missing(tmp_path, monkeypatch):
         ScenarioManager()
 
 
-def test_init_raises_when_script_first_file_missing(tmp_path, monkeypatch):
+def test_init_raises_when_script_file_missing(tmp_path, monkeypatch):
     root = tmp_path / "scenarios"
     scenario_dir = _build_minimal_scenario(root)
-    (scenario_dir / "steps" / "step1" / "script" / "1.txt").unlink()
+    (scenario_dir / "steps" / "step1" / "script.txt").unlink()
 
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", root)
 
-    with pytest.raises(FileNotFoundError, match=re.escape("script/1.txt")):
+    with pytest.raises(FileNotFoundError, match="script.txt"):
         ScenarioManager()
 
 
-def test_init_raises_when_script_has_gap(tmp_path, monkeypatch):
+def test_init_raises_when_voice_file_missing(tmp_path, monkeypatch):
     root = tmp_path / "scenarios"
     scenario_dir = _build_minimal_scenario(root)
-    script_dir = scenario_dir / "steps" / "step1" / "script"
-    (script_dir / "3.txt").write_text("x")
+    (scenario_dir / "steps" / "step1" / "voice.wav").unlink()
 
     monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", root)
 
-    with pytest.raises(ValueError, match="연속"):
-        ScenarioManager()
-
-
-def test_init_raises_when_voice_first_file_missing(tmp_path, monkeypatch):
-    root = tmp_path / "scenarios"
-    scenario_dir = _build_minimal_scenario(root)
-    (scenario_dir / "steps" / "step1" / "voice" / "1.wav").unlink()
-
-    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", root)
-
-    with pytest.raises(FileNotFoundError, match=re.escape("voice/1.wav")):
-        ScenarioManager()
-
-
-def test_init_raises_when_voice_has_gap(tmp_path, monkeypatch):
-    root = tmp_path / "scenarios"
-    scenario_dir = _build_minimal_scenario(root)
-    voice_dir = scenario_dir / "steps" / "step1" / "voice"
-    (voice_dir / "3.wav").touch()
-
-    monkeypatch.setattr("scenario.loader.SCENARIOS_ROOT", root)
-
-    with pytest.raises(ValueError, match="연속"):
+    with pytest.raises(FileNotFoundError, match="voice.wav"):
         ScenarioManager()
 
 

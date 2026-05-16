@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from scenario.common import StepOutput
 from scenario.scenario import Scenario
 from scenario.step import Step
 
@@ -14,7 +13,6 @@ def _make_step(name: str, nexts: list[str] | None = None) -> Step:
         picture=Path(f"{name}/picture.png"),
         complete_conditions=["조건"] if nexts else [],
         next_step_names=nexts or [],
-        script_count=1,
     )
 
 

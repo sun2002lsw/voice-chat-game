@@ -90,7 +90,7 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
 
     step_name = entry["step"]
     step_dir = steps_dir / step_name
-    script_count = _validate_step_files(step_name, step_dir)
+    _validate_step_files(step_name, step_dir)
 
     picture_path = find_image(step_dir, label=f"step '{step_name}'")
     complete_conditions, next_step_names = _build_transition_lists(entry)
@@ -103,7 +103,6 @@ def _build_step(entry: dict[str, Any], steps_dir: Path) -> Step:
         picture=picture_path,
         complete_conditions=complete_conditions,
         next_step_names=next_step_names,
-        script_count=script_count,
         loop=entry["loop"],
     )
 
@@ -152,56 +151,16 @@ def _validate_step_entry(entry: dict[str, Any]) -> None:
         raise ValueError(msg)
 
 
-def _validate_step_files(step_name: str, step_dir: Path) -> int:
-    script_count = _validate_numbered_files(
-        step_name,
-        folder=step_dir / "script",
-        extension="txt",
-        label="script",
-    )
-    voice_count = _validate_numbered_files(
-        step_name,
-        folder=step_dir / "voice",
-        extension="wav",
-        label="voice",
-    )
-    if script_count != voice_count:
-        msg = (
-            f"step '{step_name}'의 script({script_count}개)와 "
-            f"voice({voice_count}개) 파일 개수가 다릅니다"
-        )
-        raise ValueError(msg)
-    return script_count
-
-
-def _validate_numbered_files(
-    step_name: str,
-    *,
-    folder: Path,
-    extension: str,
-    label: str,
-) -> int:
-    if not folder.is_dir():
-        msg = f"step '{step_name}'의 {label} 폴더가 없습니다: {folder}"
+def _validate_step_files(step_name: str, step_dir: Path) -> None:
+    script_path = step_dir / "script.txt"
+    if not script_path.is_file():
+        msg = f"step '{step_name}'의 script.txt가 없습니다: {script_path}"
         raise FileNotFoundError(msg)
 
-    found_files = list(folder.glob(f"*.{extension}"))
-    raw_numbers = (int(file.stem) for file in found_files)
-    found_numbers = sorted(raw_numbers)
-
-    if not found_numbers:
-        msg = f"step '{step_name}'의 {label}/1.{extension}이 없습니다"
+    voice_path = step_dir / "voice.wav"
+    if not voice_path.is_file():
+        msg = f"step '{step_name}'의 voice.wav가 없습니다: {voice_path}"
         raise FileNotFoundError(msg)
-
-    expected_numbers = list(range(1, len(found_numbers) + 1))
-    if found_numbers != expected_numbers:
-        msg = (
-            f"step '{step_name}'의 {label} 파일 번호가 1부터 연속되지 않습니다. "
-            f"발견: {found_numbers}"
-        )
-        raise ValueError(msg)
-
-    return len(found_numbers)
 
 
 def _validate_scenario_consistency(steps: list[Step]) -> None:

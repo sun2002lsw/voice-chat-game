@@ -5,22 +5,18 @@ import pytest
 from scenario.loader import find_image
 from scenario.step import Step
 
-SCRIPT_COUNT = 3
-
 
 @pytest.fixture
 def step_dir(tmp_path: Path) -> Path:
     d = tmp_path / "1. greeting"
     d.mkdir()
     (d / "picture.png").touch()
-    (d / "script").mkdir()
-    for i in range(1, SCRIPT_COUNT + 1):
-        (d / "script" / f"{i}.txt").write_text(f"line {i}")
-    (d / "voice").mkdir()
+    (d / "script.txt").write_text("line 1")
+    (d / "voice.wav").touch()
     return d
 
 
-def _make_step(step_dir: Path, *, conditions: list, nexts: list, count: int = SCRIPT_COUNT) -> Step:
+def _make_step(step_dir: Path, *, conditions: list, nexts: list) -> Step:
     return Step(
         name="step",
         tone="...",
@@ -29,26 +25,17 @@ def _make_step(step_dir: Path, *, conditions: list, nexts: list, count: int = SC
         picture=step_dir / "picture.png",
         complete_conditions=conditions,
         next_step_names=nexts,
-        script_count=count,
     )
 
 
-def test_get_all_outputs_count_matches_script_count(step_dir):
-    step = _make_step(step_dir, conditions=[], nexts=[])
-    assert len(step.get_all_outputs()) == SCRIPT_COUNT
+def test_script_path(step_dir):
+    step = _make_step(step_dir, conditions=[], nexts=["step"])
+    assert step.script == step_dir / "script.txt"
 
 
-def test_get_all_outputs_paths(step_dir):
-    step = _make_step(step_dir, conditions=[], nexts=[])
-    outputs = step.get_all_outputs()
-    assert outputs[0].script == step_dir / "script" / "1.txt"
-    assert outputs[0].voice == step_dir / "voice" / "1.wav"
-    assert outputs[-1].script == step_dir / "script" / f"{SCRIPT_COUNT}.txt"
-
-
-def test_get_all_outputs_same_picture(step_dir):
-    step = _make_step(step_dir, conditions=[], nexts=[])
-    assert all(o.picture == step_dir / "picture.png" for o in step.get_all_outputs())
+def test_voice_path(step_dir):
+    step = _make_step(step_dir, conditions=[], nexts=["step"])
+    assert step.voice == step_dir / "voice.wav"
 
 
 def test_is_terminal_true_when_no_next_steps(step_dir):

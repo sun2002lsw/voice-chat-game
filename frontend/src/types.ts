@@ -9,8 +9,8 @@ export type StepInfo = {
   is_terminal: boolean;
   loop: boolean;
   picture_url: string;
-  scripts: string[];
-  voice_urls: string[];
+  script: string;
+  voice_url: string;
   conditions: string[];
   next_step_names: string[];
 };

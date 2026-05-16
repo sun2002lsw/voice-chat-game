@@ -40,10 +40,7 @@ def fake_scenarios_root(tmp_path: Path, monkeypatch) -> Path:
 
     step_dir = scenario_dir / "steps" / "1. greeting"
     step_dir.mkdir(parents=True)
-    script_dir = step_dir / "script"
-    script_dir.mkdir()
-    (script_dir / "1.txt").write_text("어서오세요!", encoding="utf-8")
-    (script_dir / "2.txt").write_text("결제 도와드릴까요?", encoding="utf-8")
+    (step_dir / "script.txt").write_text("어서오세요!", encoding="utf-8")
 
     monkeypatch.setattr("tts.tts._SCENARIOS_ROOT", scenarios_root)
     monkeypatch.setattr("tts.tts._CHARACTERS_ROOT", characters_root)
@@ -51,7 +48,7 @@ def fake_scenarios_root(tmp_path: Path, monkeypatch) -> Path:
     return scenarios_root
 
 
-def test_run_calls_generate_voice_for_each_script(fake_scenarios_root, monkeypatch):
+def test_run_calls_generate_voice_for_each_step(fake_scenarios_root, monkeypatch):
     calls = []
 
     def fake_generate(*, text, output_path, voice_name, director_note, scene):
@@ -63,33 +60,12 @@ def test_run_calls_generate_voice_for_each_script(fake_scenarios_root, monkeypat
 
     TTS().run()
 
-    assert sorted(calls) == ["1.wav", "2.wav"]
+    assert calls == ["voice.wav"]
 
 
-def test_run_skips_existing_voice_files(fake_scenarios_root, monkeypatch):
-    voice_dir = fake_scenarios_root / "test_cafe" / "steps" / "1. greeting" / "voice"
-    voice_dir.mkdir()
-    (voice_dir / "1.wav").touch()
-
-    calls = []
-
-    def fake_generate(*, text, output_path, voice_name, director_note, scene):
-        calls.append(output_path.name)
-        output_path.touch()
-        return _FAKE_USAGE
-
-    monkeypatch.setattr("tts.tts.generate_voice", fake_generate)
-
-    TTS().run()
-
-    assert calls == ["2.wav"]
-
-
-def test_run_skips_all_when_all_voice_files_exist(fake_scenarios_root, monkeypatch):
-    voice_dir = fake_scenarios_root / "test_cafe" / "steps" / "1. greeting" / "voice"
-    voice_dir.mkdir()
-    (voice_dir / "1.wav").touch()
-    (voice_dir / "2.wav").touch()
+def test_run_skips_existing_voice_file(fake_scenarios_root, monkeypatch):
+    step_dir = fake_scenarios_root / "test_cafe" / "steps" / "1. greeting"
+    (step_dir / "voice.wav").touch()
 
     calls = []
 
@@ -120,7 +96,7 @@ def test_run_uses_first_part_of_character_as_voice_name(
 
     TTS().run()
 
-    assert captured_voice_names == ["Zephyr", "Zephyr"]
+    assert captured_voice_names == ["Zephyr"]
 
 
 def test_run_passes_character_file_content_as_director_note(
@@ -138,7 +114,7 @@ def test_run_passes_character_file_content_as_director_note(
 
     TTS().run()
 
-    assert captured_notes == ["Style: smile.", "Style: smile."]
+    assert captured_notes == ["Style: smile."]
 
 
 def test_run_passes_script_text_to_generate_voice(fake_scenarios_root, monkeypatch):
@@ -153,7 +129,7 @@ def test_run_passes_script_text_to_generate_voice(fake_scenarios_root, monkeypat
 
     TTS().run()
 
-    assert sorted(captured_texts) == sorted(["어서오세요!", "결제 도와드릴까요?"])
+    assert captured_texts == ["어서오세요!"]
 
 
 def test_run_passes_scene_from_graph_entry(fake_scenarios_root, monkeypatch):
@@ -168,4 +144,4 @@ def test_run_passes_scene_from_graph_entry(fake_scenarios_root, monkeypatch):
 
     TTS().run()
 
-    assert captured_scenes == ["직원이 인사한다", "직원이 인사한다"]
+    assert captured_scenes == ["직원이 인사한다"]

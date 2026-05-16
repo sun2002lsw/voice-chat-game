@@ -25,10 +25,8 @@ def _make_step_dir(
     step_dir = scenario_dir / "steps" / step_name
     step_dir.mkdir(parents=True)
     (step_dir / "picture.png").write_bytes(b"\x89PNG\r\n\x1a\n")
-    (step_dir / "script").mkdir()
-    (step_dir / "script" / "1.txt").write_text(script_text, encoding="utf-8")
-    (step_dir / "voice").mkdir()
-    (step_dir / "voice" / "1.wav").write_bytes(b"RIFF....WAVEfmt ")
+    (step_dir / "script.txt").write_text(script_text, encoding="utf-8")
+    (step_dir / "voice.wav").write_bytes(b"RIFF....WAVEfmt ")
 
 
 @pytest.fixture
@@ -105,8 +103,8 @@ def test_get_step_returns_step_data(client: TestClient):
 
     assert body["step_name"] == "1. 인사"
     assert body["is_terminal"] is False
-    assert body["scripts"] == ["어서오세요"]
-    assert len(body["voice_urls"]) == 1
+    assert body["script"] == "어서오세요"
+    assert body["voice_url"].endswith("/voice")
     assert body["conditions"] == ["주문"]
     assert body["next_step_names"] == ["2. 결제"]
 
@@ -124,12 +122,6 @@ def test_get_step_picture_returns_image(client: TestClient):
 
 def test_get_step_voice_returns_audio(client: TestClient):
     step_name = quote("1. 인사")
-    resp = client.get(f"/api/scenarios/test_cafe/steps/{step_name}/voice/0")
+    resp = client.get(f"/api/scenarios/test_cafe/steps/{step_name}/voice")
     assert resp.status_code == 200
     assert len(resp.content) > 0
-
-
-def test_get_step_voice_clamps_index(client: TestClient):
-    step_name = quote("1. 인사")
-    resp = client.get(f"/api/scenarios/test_cafe/steps/{step_name}/voice/99")
-    assert resp.status_code == 200

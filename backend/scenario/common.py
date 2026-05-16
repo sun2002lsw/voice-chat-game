@@ -3,13 +3,6 @@ from pathlib import Path
 
 
 @dataclass(frozen=True)
-class StepOutput:
-    picture: Path
-    script: Path
-    voice: Path
-
-
-@dataclass(frozen=True)
 class ScenarioInfo:
     name: str
     picture: Path

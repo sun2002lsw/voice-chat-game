@@ -6,7 +6,7 @@ import styles from "./AudioPlayer.module.css";
 type Props = {
   voiceUrl: string;
   stepKey: string;
-  audioKey: number;
+  loop?: boolean;
   onEnded?: () => void;
 };
 
@@ -18,9 +18,8 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function AudioPlayer({ voiceUrl, stepKey, audioKey, onEnded }: Props) {
-  const src = `${voiceUrl}?step=${encodeURIComponent(stepKey)}&k=${audioKey}`;
-  const cacheKey = `${stepKey}#${audioKey}`;
+export function AudioPlayer({ voiceUrl, stepKey, loop, onEnded }: Props) {
+  const src = `${voiceUrl}?step=${encodeURIComponent(stepKey)}`;
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -32,7 +31,7 @@ export function AudioPlayer({ voiceUrl, stepKey, audioKey, onEnded }: Props) {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [stepKey, audioKey]);
+  }, [stepKey]);
 
   function togglePlay() {
     const audio = audioRef.current;
@@ -60,12 +59,13 @@ export function AudioPlayer({ voiceUrl, stepKey, audioKey, onEnded }: Props) {
   return (
     <div className={styles.player}>
       <audio
-        key={cacheKey}
+        key={stepKey}
         ref={audioRef}
         src={src}
         autoPlay
         controls
         hidden
+        loop={loop}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}

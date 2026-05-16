@@ -12,7 +12,7 @@ class StepDTO(BaseModel):
     is_terminal: bool
     loop: bool
     picture_url: str
-    scripts: list[str]
-    voice_urls: list[str]
+    script: str
+    voice_url: str
     conditions: list[str]
     next_step_names: list[str]

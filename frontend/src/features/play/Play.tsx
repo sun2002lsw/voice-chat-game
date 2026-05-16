@@ -23,7 +23,6 @@ export function Play() {
 
   const [stepInfo, setStepInfo] = useState<StepInfo | null>(null);
   const [dialog, setDialog] = useState<string[]>([]);
-  const [cycleIndex, setCycleIndex] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [centerWidth, setCenterWidth] = useState<number | null>(null);
@@ -81,15 +80,10 @@ export function Play() {
     fetchStep(name, firstStepName)
       .then((info) => {
         setStepInfo(info);
-        setDialog([info.scripts[0]]);
+        setDialog([info.script]);
       })
       .catch(() => navigate("/"));
   }, []);
-
-  // 스텝 변경 시 사이클 리셋
-  useEffect(() => {
-    setCycleIndex(0);
-  }, [stepInfo?.step_name]);
 
   // 키보드 숫자키로 다음 스텝 선택
   useEffect(() => {
@@ -108,7 +102,7 @@ export function Play() {
       fetchStep(name!, nextStepName)
         .then((next) => {
           setStepInfo(next);
-          setDialog((prev) => [...prev, next.scripts[0]]);
+          setDialog((prev) => [...prev, next.script]);
         })
         .catch((err: unknown) => {
           if (err instanceof HttpError) {
@@ -122,21 +116,9 @@ export function Play() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isLoading, name]);
 
-  function handleAudioEnded() {
-    if (stepInfo === null) return;
-    if (stepInfo.loop) {
-      setCycleIndex((i) => (i + 1) % stepInfo.voice_urls.length);
-    } else {
-      setCycleIndex((i) => Math.min(i + 1, stepInfo.voice_urls.length - 1));
-    }
-  }
-
   if (stepInfo === null) {
     return null;
   }
-
-  const currentScript = stepInfo.scripts[cycleIndex % stepInfo.scripts.length];
-  const displayDialog = [...dialog.slice(0, -1), currentScript];
 
   const layoutStyle =
     centerWidth !== null
@@ -172,17 +154,16 @@ export function Play() {
         </div>
         <div className={styles.audio} ref={audioRef}>
           <AudioPlayer
-            voiceUrl={stepInfo.voice_urls[cycleIndex % stepInfo.voice_urls.length]}
+            voiceUrl={stepInfo.voice_url}
             stepKey={stepInfo.step_name}
-            audioKey={cycleIndex}
-            onEnded={handleAudioEnded}
+            loop={stepInfo.loop}
           />
         </div>
       </section>
       <aside className={styles.chat}>
         <DialogPanel
           scenarioName={name ?? ""}
-          dialog={displayDialog}
+          dialog={dialog}
           isTerminal={stepInfo.is_terminal}
           onHome={() => navigate("/")}
         />
